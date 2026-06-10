@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import API_URL from '../api.js';
 
 export default function Step1Auth({ credentials, onComplete }) {
   const [activeTab, setActiveTab] = useState(credentials?.authType === 'apikey' ? 'apikey' : 'basic')
@@ -56,7 +57,7 @@ export default function Step1Auth({ credentials, onComplete }) {
         }
       }
 
-      const res = await fetch('/api/verify-auth', {
+      const res = await fetch(`${API_URL}/api/verify-auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: basicAuth.domain, headers: credentials.headers })
@@ -91,7 +92,7 @@ export default function Step1Auth({ credentials, onComplete }) {
         }
       }
 
-      const res = await fetch('/api/verify-auth', {
+      const res = await fetch(`${API_URL}/api/verify-auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: apiKey.domain, headers: credentials.headers })

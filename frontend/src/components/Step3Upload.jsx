@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import API_URL from '../api.js';
 
 export default function Step3Upload({ fileData: initialFileData, onComplete, onBack }) {
   const [fileData, setFileData] = useState(initialFileData)
@@ -22,7 +23,7 @@ export default function Step3Upload({ fileData: initialFileData, onComplete, onB
     formData.append('file', file)
 
     try {
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${API_URL}/api/upload`, {
         method: 'POST',
         body: formData
       })

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import SearchableSelect from './SearchableSelect'
+import API_URL from '../api.js';
 
 export default function Step4Mapping({ fileData, existingMapping, orcanosFields = [], mandatoryFields = [], onComplete, onBack }) {
   const [mapping, setMapping] = useState(existingMapping || {})

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { saveAs } from 'file-saver'
 import * as XLSX from 'xlsx'
+import API_URL from '../api.js';
 
 export default function Step5Import({ fileData, mapping, credentials, projectConfig, orcanosFields = [], mandatoryFields = [], onStartOver, onBack, setImportInProgress }) {
   // Validation state
@@ -36,8 +37,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
     setValidation(null)
 
     try {
-      const response = await fetch('/api/validate-import', {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/api/validate-import`, {        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           data: fileData.data,
@@ -76,7 +76,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
     setError('')
 
     try {
-      const response = await fetch('/api/import', {
+      const response = await fetch(`${API_URL}/api/import`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

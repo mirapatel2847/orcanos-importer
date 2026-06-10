@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import SearchableSelect from './SearchableSelect'
+import API_URL from '../api.js';
 
 const toArray = (value) => {
   if (!value) return []
@@ -238,8 +239,7 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
     const projectId = parseInt(selectedProject.Id, 10)
 
     try {
-      const response = await fetch('/api/get-item-fields', {
-        method: 'POST',
+      const response = await fetch(`${API_URL}/api/get-item-fields`, {        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...credentials?.headers,
