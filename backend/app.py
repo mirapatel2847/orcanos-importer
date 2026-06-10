@@ -449,6 +449,14 @@ def validate_import():
                 api_body['Parent_ID'] = str(api_body['Project_ID'])
 
             reasons = validate_row(api_body, mandatory_fields)
+            field_name_to_title = {
+                f['ws_add_col_name'].replace('_Name', '_value'): f.get('title', f.get('name', ''))
+                for f in orcanos_fields
+            }
+            reasons = [
+                next((r.replace(fname, title) for fname, title in field_name_to_title.items() if fname in r), r)
+                for r in reasons
+            ]
 
             is_valid = len(reasons) == 0
             if is_valid:
