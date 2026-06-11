@@ -666,6 +666,10 @@ def import_data():
     
     except Exception as e:
         return jsonify({"error": f"Error processing import: {str(e)}"}), 500
+    
+@app.route('/health')
+def health():
+    return {"status": "ok"}
 
 if __name__ == '__main__':
     debug_mode = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
