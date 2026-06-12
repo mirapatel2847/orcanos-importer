@@ -1,10 +1,348 @@
-import { useState, useEffect } from 'react'
-import SearchableSelect from './SearchableSelect'
+import { useState, useEffect, useRef } from 'react'
 import API_URL from '../api.js';
 
+// Serializer to split auto-inserted space after column chips into separate parts
+const serializeParts = (partsList) => {
+  return partsList
+    .map(part => ({ type: part.type, value: part.value }))
+    .filter(part => part.type === 'column' || part.value !== '');
+};
+
+// Backward compatibility helper to normalize loaded mappings
+const parseAndNormalizeMapping = (rawMap) => {
+  if (!rawMap || typeof rawMap !== 'object') return {};
+  
+  const values = Object.values(rawMap);
+  const isOldFormat = values.length > 0 && values.every(val => typeof val === 'string');
+
+  const normalized = {};
+
+  if (isOldFormat) {
+    Object.entries(rawMap).forEach(([excelCol, orcanosField]) => {
+      if (orcanosField && orcanosField !== '-- Skip this field --') {
+        normalized[orcanosField] = [
+          { type: 'text', value: '' },
+          { type: 'column', value: excelCol },
+          { type: 'text', value: '' }
+        ];
+      }
+    });
+    return normalized;
+  }
+
+  Object.entries(rawMap).forEach(([orcanosField, parts]) => {
+    if (Array.isArray(parts)) {
+      const cleaned = parts.filter(p => p && (p.type === 'text' || p.type === 'column'));
+      
+      // 1. Merge consecutive text parts
+      const merged = [];
+      cleaned.forEach(part => {
+        if (part.type === 'text') {
+          if (merged.length > 0 && merged[merged.length - 1].type === 'text') {
+            merged[merged.length - 1].value += part.value;
+          } else {
+            merged.push({ ...part });
+          }
+        } else {
+          merged.push({ ...part });
+        }
+      });
+
+      // 2. Build alternating structure
+      const alternating = [];
+      let expectText = true;
+      
+      merged.forEach(part => {
+        if (expectText) {
+          if (part.type === 'text') {
+            alternating.push(part);
+            expectText = false;
+          } else {
+            alternating.push({ type: 'text', value: '' });
+            alternating.push(part);
+            expectText = false;
+          }
+        } else {
+          if (part.type === 'column') {
+            alternating.push(part);
+            expectText = true;
+          } else {
+            if (alternating.length > 0) {
+              alternating[alternating.length - 1].value += part.value;
+            } else {
+              alternating.push(part);
+            }
+          }
+        }
+      });
+
+      if (alternating.length === 0 || alternating[alternating.length - 1].type === 'column') {
+        alternating.push({ type: 'text', value: '' });
+      }
+
+      normalized[orcanosField] = alternating;
+    }
+  });
+  return normalized;
+};
+
+// Rich mapping input builder component per field
+function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
+  const parts = Array.isArray(value) && value.length > 0 ? value : [{ type: 'text', value: '' }];
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [focusedInput, setFocusedInput] = useState({ index: null, offset: null });
+  const [pendingFocus, setPendingFocus] = useState(null);
+
+  const containerRef = useRef(null);
+  const inputRefs = useRef({});
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Restore focus and cursor position after parts modification
+  useEffect(() => {
+    if (pendingFocus !== null) {
+      const { index, offset } = pendingFocus;
+      const el = inputRefs.current[index];
+      if (el) {
+        el.focus();
+        try {
+          el.setSelectionRange(offset, offset);
+        } catch (e) {}
+      }
+      setPendingFocus(null);
+    }
+  }, [pendingFocus, parts]);
+
+  const handleTextChange = (idx, textVal) => {
+    const newParts = [...parts];
+    newParts[idx] = { ...newParts[idx], value: textVal };
+    onChange(newParts);
+  };
+
+  const handleTextInteraction = (idx, e) => {
+    setFocusedInput({
+      index: idx,
+      offset: e.target.selectionStart
+    });
+  };
+
+  const handleSelectColumn = (colName) => {
+    let targetIdx = focusedInput.index;
+    let offset = focusedInput.offset;
+
+    if (targetIdx === null || targetIdx < 0 || targetIdx >= parts.length || parts[targetIdx].type !== 'text') {
+      targetIdx = parts.length - 1;
+      offset = parts[targetIdx].value.length;
+    }
+
+    const targetTextPart = parts[targetIdx];
+    const textVal = targetTextPart.value;
+    const leftText = textVal.slice(0, offset);
+    
+    // Automatically prepend a space character immediately after the column chip in the rightText
+    const rightText = ' ' + textVal.slice(offset);
+
+    const newParts = [
+      ...parts.slice(0, targetIdx),
+      { type: 'text', value: leftText },
+      { type: 'column', value: colName },
+      { type: 'text', value: rightText },
+      ...parts.slice(targetIdx + 1)
+    ];
+
+    onChange(newParts);
+    // Focus the next text input and place cursor right after the auto-inserted space (offset 1)
+    setPendingFocus({
+      index: targetIdx + 2,
+      offset: 1
+    });
+  };
+
+  const handleKeyDown = (idx, e) => {
+    if (e.key === 'Backspace') {
+      const { selectionStart, selectionEnd } = e.target;
+      if (selectionStart === 0 && selectionEnd === 0 && idx > 0) {
+        e.preventDefault();
+        
+        const prevTextPart = parts[idx - 2];
+        const currentTextPart = parts[idx];
+
+        const mergedText = (prevTextPart?.value || '') + (currentTextPart?.value || '');
+        const cursorOffset = (prevTextPart?.value || '').length;
+
+        const newParts = [
+          ...parts.slice(0, idx - 2),
+          { type: 'text', value: mergedText },
+          ...parts.slice(idx + 1)
+        ];
+
+        onChange(newParts);
+        setPendingFocus({
+          index: idx - 2,
+          offset: cursorOffset
+        });
+      }
+    }
+  };
+
+  const handleRemoveChip = (idx) => {
+    const prevTextPart = parts[idx - 1];
+    const nextTextPart = parts[idx + 1];
+
+    const mergedText = (prevTextPart?.value || '') + (nextTextPart?.value || '');
+    const cursorOffset = (prevTextPart?.value || '').length;
+
+    const newParts = [
+      ...parts.slice(0, idx - 1),
+      { type: 'text', value: mergedText },
+      ...parts.slice(idx + 2)
+    ];
+
+    onChange(newParts);
+    setPendingFocus({
+      index: idx - 1,
+      offset: cursorOffset
+    });
+  };
+
+  const isEmpty = !parts.some(p => p.type === 'column' || (p.type === 'text' && p.value.trim() !== ''));
+  const showWarning = isMandatory && isEmpty;
+
+  const filteredColumns = excelColumns.filter(col => 
+    (col || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div ref={containerRef} className="relative w-full">
+      <div 
+        className={`flex items-center justify-between border rounded-lg py-1.5 px-2.5 bg-white min-h-[36px] transition-all cursor-text focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent ${
+          showWarning ? 'border-amber-400 bg-amber-50/10' : 'border-gray-300'
+        }`}
+        onClick={(e) => {
+          if (
+            e.target.tagName !== 'INPUT' && 
+            !e.target.closest('button') && 
+            !e.target.closest('.bg-purple-100')
+          ) {
+            const lastIdx = parts.length - 1;
+            const el = inputRefs.current[lastIdx];
+            if (el) {
+              el.focus();
+            }
+          }
+        }}
+      >
+        <div className="flex flex-wrap items-center gap-1 flex-1 min-w-0">
+          {parts.map((part, idx) => {
+            if (part.type === 'column') {
+              return (
+                <div 
+                  key={idx} 
+                  className="bg-purple-100 text-purple-800 text-xs font-semibold px-2 py-0.5 rounded flex items-center gap-1 select-none border border-purple-200"
+                >
+                  <span>{part.value}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveChip(idx);
+                    }}
+                    className="text-purple-600 hover:text-purple-900 font-bold focus:outline-none text-[11px] leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            } else {
+              return (
+                <div key={idx} className="relative inline-grid grid-cols-1 items-center max-w-full min-w-[4px]">
+                  <input
+                    ref={(el) => { inputRefs.current[idx] = el; }}
+                    type="text"
+                    value={part.value}
+                    onChange={(e) => handleTextChange(idx, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(idx, e)}
+                    onKeyUp={(e) => handleTextInteraction(idx, e)}
+                    onClick={(e) => handleTextInteraction(idx, e)}
+                    onFocus={(e) => handleTextInteraction(idx, e)}
+                    className="absolute inset-0 w-full h-full bg-transparent border-none outline-none p-0 m-0 font-sans text-sm text-gray-800 focus:ring-0 focus:border-none focus:outline-none"
+                    style={{ border: 'none', boxShadow: 'none' }}
+                  />
+                  <span className="col-start-1 row-start-1 invisible whitespace-pre pointer-events-none p-0 m-0 font-sans text-sm min-w-[4px] block">
+                    {part.value || ' '}
+                  </span>
+                </div>
+              );
+            }
+          })}
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0 pl-1 border-l border-gray-200 ml-2">
+          <button
+            type="button"
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="text-gray-400 hover:text-[#7E3F98] p-1 transition focus:outline-none"
+            title="Insert Excel Column"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {showWarning && (
+        <span className="text-[11px] text-amber-600 font-medium absolute -bottom-4 left-1 leading-none">
+          * Mandatory field is not mapped
+        </span>
+      )}
+
+      {dropdownOpen && (
+        <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-2 flex flex-col max-h-60">
+          <div className="relative mb-2 flex-shrink-0">
+            <input
+              type="text"
+              placeholder="Search columns..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#7E3F98] focus:border-transparent"
+            />
+          </div>
+          <div className="overflow-y-auto flex-1 space-y-0.5 max-h-40 pr-1">
+            {filteredColumns.map((col, cIdx) => (
+              <button
+                key={cIdx}
+                type="button"
+                onClick={() => handleSelectColumn(col)}
+                className="w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded transition font-medium truncate"
+              >
+                {col}
+              </button>
+            ))}
+            {filteredColumns.length === 0 && (
+              <div className="text-xs text-gray-400 text-center py-4">No columns found</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Step4Mapping({ fileData, existingMapping, orcanosFields = [], mandatoryFields = [], onComplete, onBack }) {
-  const [mapping, setMapping] = useState(existingMapping || {})
+  const [mapping, setMapping] = useState({})
   const [error, setError] = useState('')
+  
   const fieldsWithParent = orcanosFields.some(f => f.ws_add_col_name === 'Parent_ID')
     ? orcanosFields
     : [...orcanosFields, { 
@@ -13,51 +351,51 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
         title: 'Parent ID', 
         is_mandatory: '0' 
       }]
-  // Auto-map on component mount only if no mapping provided
+
+  // Load and auto-map logic
   useEffect(() => {
     if (existingMapping) {
-      // Use existing mapping
-      setMapping(existingMapping)
+      setMapping(parseAndNormalizeMapping(existingMapping))
     } else {
-      // Auto-map if coming from Step 2
       const autoMapping = {}
-      if (fileData && fileData.headers) {
-        fileData.headers.forEach(header => {
+      fieldsWithParent.forEach(field => {
+        const wsName = /^CS\d+_Name$/.test(field.ws_add_col_name)
+          ? field.ws_add_col_name.replace('_Name', '_value')
+          : field.ws_add_col_name;
+        
+        const cleanName = (field.name || '').toLowerCase().replace(/[\s_-]+/g, '')
+        const cleanTitle = (field.title || '').toLowerCase().replace(/[\s_-]+/g, '')
+
+        const matchedHeader = fileData.headers.find(header => {
           const normalizedHeader = header.trim().toLowerCase().replace(/[\s_-]+/g, '')
-          const matchedField = fieldsWithParent.find(f => {
-            const cleanName = (f.name || '').toLowerCase().replace(/[\s_-]+/g, '')
-            const cleanTitle = (f.title || '').toLowerCase().replace(/[\s_-]+/g, '')
-            return cleanName === normalizedHeader || cleanTitle === normalizedHeader
-          })
-          const wsName = matchedField?.ws_add_col_name || ''
-          autoMapping[header] = matchedField ? (/^CS\d+_Name$/.test(wsName) ? wsName.replace('_Name', '_value') : wsName) : '-- Skip this field --' })
-      }
-      setMapping(autoMapping)
+          return cleanName === normalizedHeader || cleanTitle === normalizedHeader
+        })
+
+        if (matchedHeader) {
+          autoMapping[wsName] = [
+            { type: 'text', value: '' },
+            { type: 'column', value: matchedHeader },
+            { type: 'text', value: ' ' }
+          ]
+        } else {
+          autoMapping[wsName] = [
+            { type: 'text', value: '' }
+          ]
+        }
+      })
+      setMapping(parseAndNormalizeMapping(autoMapping))
     }
   }, [fileData, existingMapping, orcanosFields])
 
-  const handleMappingChange = (excelHeader, orcanosField) => {
+  const handleMappingChange = (orcanosField, parts) => {
     setMapping(prev => ({
       ...prev,
-      [excelHeader]: orcanosField
+      [orcanosField]: parts
     }))
     setError('')
   }
 
   const validateMapping = () => {
-    console.log('mapping values:', Object.values(mapping))
-    console.log('mandatoryFields ws_add_col_name:', mandatoryFields.map(f => f.ws_add_col_name))
-    const unmappedMandatory = mandatoryFields.filter(field => {
-      const wsName = field.ws_add_col_name || ''
-      const checkName = /^CS\d+_Name$/.test(wsName) ? wsName.replace('_Name', '_value') : wsName
-      return !Object.values(mapping).includes(checkName)
-    })
-
-    if (unmappedMandatory.length > 0) {
-      const titles = unmappedMandatory.map(f => f.title || f.name).join(', ')
-      setError(`Please map all mandatory fields: ${titles}`)
-      return false
-    }
     return true
   }
 
@@ -70,7 +408,7 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
       try {
         const data = JSON.parse(event.target.result)
         if (data.mapping) {
-          setMapping(data.mapping)
+          setMapping(parseAndNormalizeMapping(data.mapping))
           setError('')
         } else {
           setError('Invalid mapping file format')
@@ -83,8 +421,14 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
   }
 
   const handleSaveMapping = () => {
+    // Serialize all mappings before saving
+    const serializedMapping = {};
+    Object.entries(mapping).forEach(([field, parts]) => {
+      serializedMapping[field] = serializeParts(parts);
+    });
+
     const mappingData = {
-      mapping: mapping
+      mapping: serializedMapping
     }
     const dataStr = JSON.stringify(mappingData, null, 2)
     const dataBlob = new Blob([dataStr], { type: 'application/json' })
@@ -100,7 +444,14 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
 
   const handleSaveAndImport = () => {
     if (!validateMapping()) return
-    onComplete(mapping)
+    
+    // Serialize all mappings before passing to parent
+    const serializedMapping = {};
+    Object.entries(mapping).forEach(([field, parts]) => {
+      serializedMapping[field] = serializeParts(parts);
+    });
+
+    onComplete(serializedMapping)
   }
 
   if (!fileData || !fileData.headers) {
@@ -136,54 +487,43 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
       )}
 
       {/* Mapping Table */}
-      <div className="mb-8 overflow-x-auto border border-gray-300 rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
+      <div className="mb-8 overflow-visible border border-gray-300 rounded-lg">
+        <table className="min-w-full divide-y divide-gray-200 table-fixed">
           <thead className="bg-gray-100">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                Excel Column
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-1/3">
                 Orcanos Field
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-2/3">
+                Mapping Builder
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {fileData.headers.map((header, idx) => {
-              const currentValue = mapping[header] || '-- Skip this field --';
-              const needsMapping = currentValue === '-- Skip this field --';
+            {fieldsWithParent.map((field, idx) => {
+              const wsName = /^CS\d+_Name$/.test(field.ws_add_col_name)
+                ? field.ws_add_col_name.replace('_Name', '_value')
+                : field.ws_add_col_name;
               
-              // Get all values mapped to OTHER headers
-              const otherMappedValues = Object.entries(mapping)
-                .filter(([key, val]) => key !== header && val !== '-- Skip this field --')
-                .map(([_, val]) => val);
-              
+              const isMandatory = field.is_mandatory === '1';
+              const currentParts = mapping[wsName] || [{ type: 'text', value: '' }];
+
               return (
                 <tr key={idx} className="hover:bg-gray-50">
-                  <td className="px-6 py-3 text-sm text-gray-900">
-                    {header}
+                  <td className="px-6 py-2 text-sm font-semibold text-gray-700 w-1/3 align-middle">
+                    <div className="flex items-center gap-1">
+                      <span>{field.title || field.name}</span>
+                      {isMandatory && (
+                        <span className="text-red-500 font-bold" title="Mandatory field">*</span>
+                      )}
+                    </div>
                   </td>
-                  <td className="px-6 py-3 text-sm relative overflow-visible">
-                    <SearchableSelect
-                      value={currentValue}
-                      onChange={(val) => handleMappingChange(header, val)}
-                      className={needsMapping ? 'border-red-400 bg-red-50' : 'border-gray-300'}
-                      options={[
-                        { value: '-- Skip this field --', label: '-- Skip this field --' },
-                        ...fieldsWithParent.map((field) => {
-                          const fieldValue = /^CS\d+_Name$/.test(field.ws_add_col_name)
-                            ? field.ws_add_col_name.replace('_Name', '_value')
-                            : field.ws_add_col_name
-                          const isMappedElsewhere = otherMappedValues.includes(fieldValue)
-                          const isMandatory = field.is_mandatory === '1'
-                          return {
-                            value: fieldValue,
-                            label: `${field.title || field.name}${isMandatory ? ' *' : ''}`,
-                            disabled: isMappedElsewhere,
-                            bold: isMandatory
-                          }
-                        })
-                      ]}
+                  <td className="px-6 py-2 text-sm w-2/3 align-middle overflow-visible">
+                    <MappingInputBuilder
+                      value={currentParts}
+                      onChange={(newParts) => handleMappingChange(wsName, newParts)}
+                      excelColumns={fileData.headers}
+                      isMandatory={isMandatory}
                     />
                   </td>
                 </tr>
@@ -196,7 +536,7 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
       {/* Mandatory Fields Info */}
       {mandatoryFields.length > 0 && (
         <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
-          <p className="text-[#7E3F98] font-semibold mb-2">Mandatory Fields (must be mapped):</p>
+          <p className="text-[#7E3F98] font-semibold mb-2">Mandatory Fields:</p>
           <p className="text-purple-800 text-sm">
             {mandatoryFields.map(f => f.title || f.name).join(', ')}
           </p>

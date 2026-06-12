@@ -430,10 +430,24 @@ def validate_import():
                 for idx, f in enumerate(custom_fields)
             }
 
-            for excel_col, orcanos_field in mapping.items():
-                if orcanos_field == '-- Skip this field --':
+            for orcanos_field, parts in mapping.items():
+                if not isinstance(parts, list) or len(parts) == 0:
                     continue
-                value = row.get(excel_col)
+
+                resolved_value = ""
+                for part in parts:
+                    if not isinstance(part, dict):
+                        continue
+                    part_type = part.get('type')
+                    part_val = part.get('value')
+                    if part_type == 'column':
+                        cell_val = row.get(part_val)
+                        if cell_val is not None:
+                            resolved_value += str(cell_val)
+                    elif part_type == 'text':
+                        if part_val is not None:
+                            resolved_value += str(part_val)
+
                 if orcanos_field in custom_field_index:
                     n = custom_field_index[orcanos_field]
                     field_title = next(
@@ -441,9 +455,9 @@ def validate_import():
                         ''
                     )
                     api_body[f'CS{n}_Name'] = field_title
-                    api_body[f'CS{n}_value'] = value
+                    api_body[f'CS{n}_value'] = resolved_value
                 else:
-                    api_body[orcanos_field] = value
+                    api_body[orcanos_field] = resolved_value
 
             if not api_body.get('Parent_ID'):
                 api_body['Parent_ID'] = str(api_body['Project_ID'])
@@ -544,12 +558,26 @@ def import_data():
                     }
 
 
-                    for excel_col, orcanos_field in mapping.items():
-                        if orcanos_field == '-- Skip this field --':
+                    for orcanos_field, parts in mapping.items():
+                        if not isinstance(parts, list) or len(parts) == 0:
                             continue
 
-                        value = row.get(excel_col)
-                        if value is None or value == '':
+                        resolved_value = ""
+                        for part in parts:
+                            if not isinstance(part, dict):
+                                continue
+                            part_type = part.get('type')
+                            part_val = part.get('value')
+                            if part_type == 'column':
+                                cell_val = row.get(part_val)
+                                if cell_val is not None:
+                                    resolved_value += str(cell_val)
+                            elif part_type == 'text':
+                                if part_val is not None:
+                                    resolved_value += str(part_val)
+
+                        # Skip if value is empty/whitespace only
+                        if not resolved_value.strip():
                             continue
 
                         # Check if this is a custom field
@@ -560,9 +588,9 @@ def import_data():
                                 ''
                             )
                             api_body[f'CS{n}_Name'] = field_title
-                            api_body[f'CS{n}_value'] = value
+                            api_body[f'CS{n}_value'] = resolved_value
                         else:
-                            api_body[orcanos_field] = value
+                            api_body[orcanos_field] = resolved_value
 
                     # Parent_ID defaulting
                     if not api_body.get('Parent_ID'):
