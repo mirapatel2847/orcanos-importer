@@ -175,7 +175,8 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
       for (const version of toArray(project.Version)) {
         pairs.push({
           value: makeProjectVersionKey(project.Id, version.Version_label),
-          label: version.List_label
+          label: version.List_label,
+          verId: version.Ver_id ?? null
         })
       }
     }
@@ -264,12 +265,14 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
       const orcanosFields = data.Data?.field || []
       const mandatoryFields = orcanosFields.filter((f) => f.is_mandatory === '1')
 
+      const selectedVersionOption = allProjectVersionPairs.find((o) => o.value === selectedProjectVersionKey)
       const newProjectConfig = {
         item_type: selectedItemType.Code,
         object_type_label: selectedItemType.Label,
         project_id: projectId,
         major_version: majorVersion,
         minor_version: minorVersion,
+        ver_id: selectedVersionOption?.verId ?? null,
         itemType: selectedItemType.Code,
         projectId,
         majorVersion,

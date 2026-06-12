@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { saveAs } from 'file-saver'
 import * as XLSX from 'xlsx'
 import API_URL from '../api.js';
 
@@ -149,33 +148,68 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
 
   const handleExportResults = () => {
     if (!results || !results.results) return;
-    
-    const headers = ['Row', 'Object Name', 'Object Type', 
-                     'Status', 'Object ID', 'Error Message'];
-    
-    const rows = results.results.map(r => [
+
+    const headers = ['Row', 'Object Name', 'Object Type', 'Status', 'Object ID', 'Error Message'];
+
+    // Build rows as plain arrays; we'll patch the Object ID cells afterwards
+    const dataRows = results.results.map(r => [
       r.row,
       r.objectName || '',
       r.objectType || '',
       r.status,
-      r.objectId || '',
+      null,           // placeholder — filled below with hyperlink or plain value
       r.error || ''
     ]);
-    
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => 
-        JSON.stringify(cell ?? '')).join(','))
-      .join('\n');
-    
-    const blob = new Blob([csvContent], 
-      { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', 'orcanos_results.csv');
-    link.click();
-    URL.revokeObjectURL(url);
+
+    const aoa = [headers, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Patch Object ID column (column index 4, header row = 0, data starts at row 1)
+    results.results.forEach((r, i) => {
+      const cellRef = XLSX.utils.encode_cell({ r: i + 1, c: 4 }); // +1 for header row
+      if (r.status === 'success' && r.objectId > 0) {
+        const url = buildOrcanosObjectUrl(r.objectId);
+        const displayText = `${itemTypeCode}-${r.objectId}`;
+        if (url) {
+          ws[cellRef] = {
+            t: 's',
+            v: displayText,
+            l: { Target: url, Tooltip: `Open ${displayText} in Orcanos` }
+          };
+        } else {
+          ws[cellRef] = { t: 's', v: displayText };
+        }
+      } else {
+        ws[cellRef] = { t: 's', v: r.objectId ? String(r.objectId) : '—' };
+      }
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Import Results');
+    XLSX.writeFile(wb, 'orcanos_results.xlsx');
   };
+
+  // Derived once at component level — used in both the URL builder and the JSX
+  const itemTypeCode = projectConfig?.item_type || projectConfig?.itemType || ''
+
+  // Build a clickable URL to the created Orcanos object
+  const buildOrcanosObjectUrl = (objectId) => {
+    if (!objectId || !credentials?.domain || !projectConfig) return null
+
+    // domain is like "app.orcanos.com/companyname"
+    // company = everything after the first slash, or domain itself if no slash
+    const domainStr = credentials.domain || ''
+    const slashIdx = domainStr.indexOf('/')
+    const company = slashIdx !== -1 ? domainStr.slice(slashIdx + 1) : domainStr
+
+    // Use Ver_id (numeric Orcanos workspace version ID, e.g. "568") stored in Step 2
+    const versionId = projectConfig.ver_id
+      ?? `${projectConfig.major_version ?? projectConfig.majorVersion}.${projectConfig.minor_version ?? projectConfig.minorVersion}`
+
+    if (!company || !itemTypeCode || !versionId) return null
+
+    return `https://app.orcanos.com/${company}/web/${versionId}/items/view?Item=${itemTypeCode}&ItemId=${objectId}`
+  }
 
   if (!fileData || !mapping || !credentials) {
     return (
@@ -439,7 +473,30 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
                       {result.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{result.objectId}</td>
+                  <td className="px-4 py-3 text-sm">
+                    {result.status === 'success' && result.objectId > 0 ? (() => {
+                      const url = buildOrcanosObjectUrl(result.objectId)
+                      return url ? (
+                        <a
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[#7E3F98] hover:text-[#682e82] font-medium underline underline-offset-2 transition-colors"
+                          title={`Open object ${itemTypeCode}-${result.objectId} in Orcanos`}
+                        >
+                          {itemTypeCode}-{result.objectId}
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
+                            <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
+                          </svg>
+                        </a>
+                      ) : (
+                        <span className="text-gray-900">{itemTypeCode}-{result.objectId}</span>
+                      )
+                    })() : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
                     {result.error}
                   </td>
