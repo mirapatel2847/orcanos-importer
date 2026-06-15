@@ -167,7 +167,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
     // Patch Object ID column (column index 4, header row = 0, data starts at row 1)
     results.results.forEach((r, i) => {
       const cellRef = XLSX.utils.encode_cell({ r: i + 1, c: 4 }); // +1 for header row
-      if (r.status === 'success' && r.objectId > 0) {
+      if ((r.status === 'added' || r.status === 'updated') && r.objectId > 0) {
         const url = buildOrcanosObjectUrl(r.objectId);
         const displayText = `${itemTypeCode}-${r.objectId}`;
         if (url) {
@@ -457,7 +457,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
             <tbody className="divide-y divide-gray-200">
               {results.results.map((result, idx) => (
                 <tr key={idx} className={
-                  result.status === 'success' ? 'bg-green-50' :
+                  result.status === 'added' || result.status === 'updated' ? 'bg-green-50' :
                   result.status === 'failed' ? 'bg-red-50' :
                   'bg-gray-50'
                 }>
@@ -466,7 +466,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
                   <td className="px-4 py-3 text-sm text-gray-900">{result.objectType}</td>
                   <td className="px-4 py-3 text-sm">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      result.status === 'success' ? 'bg-green-200 text-green-800' :
+                      result.status === 'added' || result.status === 'updated' ? 'bg-green-200 text-green-800' :
                       result.status === 'failed' ? 'bg-red-200 text-red-800' :
                       'bg-gray-200 text-gray-800'
                     }`}>
@@ -474,7 +474,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
                     </span>
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    {result.status === 'success' && result.objectId > 0 ? (() => {
+                    {(result.status === 'added' || result.status === 'updated') && result.objectId > 0 ? (() => {
                       const url = buildOrcanosObjectUrl(result.objectId)
                       return url ? (
                         <a
@@ -507,14 +507,18 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
         </div>
 
         {/* Summary Bar */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
           <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
             <p className="text-purple-800 text-sm font-medium">Total</p>
             <p className="text-2xl font-bold text-[#7E3F98]">{results.summary.total}</p>
           </div>
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-green-800 text-sm font-medium">Successful</p>
-            <p className="text-2xl font-bold text-green-900">{results.summary.success}</p>
+            <p className="text-green-800 text-sm font-medium">Added</p>
+            <p className="text-2xl font-bold text-green-900">{results.summary.added ?? 0}</p>
+          </div>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-blue-800 text-sm font-medium">Updated</p>
+            <p className="text-2xl font-bold text-blue-900">{results.summary.updated ?? 0}</p>
           </div>
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-800 text-sm font-medium">Failed</p>

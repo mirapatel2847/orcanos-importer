@@ -343,14 +343,26 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
   const [mapping, setMapping] = useState({})
   const [error, setError] = useState('')
   
-  const fieldsWithParent = orcanosFields.some(f => f.ws_add_col_name === 'Parent_ID')
-    ? orcanosFields
-    : [...orcanosFields, { 
-        name: 'Parent_ID', 
-        ws_add_col_name: 'Parent_ID', 
-        title: 'Parent ID', 
-        is_mandatory: '0' 
-      }]
+  const mappedFields = (() => {
+    let fields = [...orcanosFields];
+    if (!fields.some(f => f.ws_add_col_name === 'Parent_ID')) {
+      fields.push({
+        name: 'Parent_ID',
+        ws_add_col_name: 'Parent_ID',
+        title: 'Parent ID',
+        is_mandatory: '0'
+      });
+    }
+    if (!fields.some(f => f.ws_add_col_name === 'Object_ID')) {
+      fields.push({
+        name: 'Object_ID',
+        ws_add_col_name: 'Object_ID',
+        title: 'Object ID',
+        is_mandatory: '0'
+      });
+    }
+    return fields;
+  })();
 
   // Load and auto-map logic
   useEffect(() => {
@@ -358,7 +370,7 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
       setMapping(parseAndNormalizeMapping(existingMapping))
     } else {
       const autoMapping = {}
-      fieldsWithParent.forEach(field => {
+      mappedFields.forEach(field => {
         const wsName = /^CS\d+_Name$/.test(field.ws_add_col_name)
           ? field.ws_add_col_name.replace('_Name', '_value')
           : field.ws_add_col_name;
@@ -500,7 +512,7 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {fieldsWithParent.map((field, idx) => {
+            {mappedFields.map((field, idx) => {
               const wsName = /^CS\d+_Name$/.test(field.ws_add_col_name)
                 ? field.ws_add_col_name.replace('_Name', '_value')
                 : field.ws_add_col_name;

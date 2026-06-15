@@ -345,15 +345,7 @@ def validate_import():
 
         # Build reverse mapping: orcanos_field -> excel_col
         for row_idx, row in enumerate(data, 1):
-            api_body = {}
-
             project_config = payload.get('projectConfig', {})
-            api_body['Project_ID'] = int(project_config.get('project_id', 0))
-            api_body['Major_Version'] = int(project_config.get('major_version', 0))
-            api_body['Minor_Version'] = int(project_config.get('minor_version', 0))
-            api_body['Object_Type'] = project_config.get('object_type_label', project_config.get('item_type', ''))
-
-
             orcanos_fields = payload.get('orcanosFields', [])
             custom_fields = [
                 f for f in orcanos_fields
@@ -366,6 +358,8 @@ def validate_import():
                 for idx, f in enumerate(custom_fields)
             }
 
+            # Resolve all mapped fields
+            resolved_mapping = {}
             for orcanos_field, parts in mapping.items():
                 if not isinstance(parts, list) or len(parts) == 0:
                     continue
@@ -383,7 +377,26 @@ def validate_import():
                     elif part_type == 'text':
                         if part_val is not None:
                             resolved_value += str(part_val)
+                resolved_mapping[orcanos_field] = resolved_value
 
+            # Determine path (Add vs Update) based on Object_ID
+            object_id_val = resolved_mapping.get('Object_ID', '').strip()
+            is_update = bool(object_id_val)
+
+            # Build api_body
+            api_body = {}
+            api_body['Project_ID'] = int(project_config.get('project_id', 0))
+            api_body['Major_Version'] = int(project_config.get('major_version', 0))
+            api_body['Minor_Version'] = int(project_config.get('minor_version', 0))
+            api_body['Object_Type'] = project_config.get('object_type_label', project_config.get('item_type', ''))
+
+            for orcanos_field, resolved_value in resolved_mapping.items():
+                # If this is Add path, skip empty/whitespace values (existing behavior)
+                if not is_update:
+                    if not resolved_value.strip():
+                        continue
+
+                # Check if this is a custom field
                 if orcanos_field in custom_field_index:
                     n = custom_field_index[orcanos_field]
                     field_title = next(
@@ -398,15 +411,18 @@ def validate_import():
             if not api_body.get('Parent_ID'):
                 api_body['Parent_ID'] = str(api_body['Project_ID'])
 
-            reasons = validate_row(api_body, mandatory_fields)
-            field_name_to_title = {
-                f['ws_add_col_name'].replace('_Name', '_value'): f.get('title', f.get('name', ''))
-                for f in orcanos_fields
-            }
-            reasons = [
-                next((r.replace(fname, title) for fname, title in field_name_to_title.items() if fname in r), r)
-                for r in reasons
-            ]
+            if is_update:
+                reasons = []
+            else:
+                reasons = validate_row(api_body, mandatory_fields)
+                field_name_to_title = {
+                    f['ws_add_col_name'].replace('_Name', '_value'): f.get('title', f.get('name', ''))
+                    for f in orcanos_fields
+                }
+                reasons = [
+                    next((r.replace(fname, title) for fname, title in field_name_to_title.items() if fname in r), r)
+                    for r in reasons
+                ]
 
             is_valid = len(reasons) == 0
             if is_valid:
@@ -459,17 +475,43 @@ def import_data():
             return jsonify({"error": "Mapping must be a dictionary"}), 400
         
         results = []
-        success_count = 0
+        added_count = 0
+        updated_count = 0
         failed_count = 0
         skipped_count = 0
         mandatory_fields = payload.get('mandatory_fields', MANDATORY_FIELDS)
         
         def generate():
-            nonlocal success_count, failed_count, skipped_count
+            nonlocal added_count, updated_count, failed_count, skipped_count
             
             for row_idx, row in enumerate(data, 1):
                 try:
-                    # Apply mapping
+                    # Resolve all mapped fields
+                    resolved_mapping = {}
+                    for orcanos_field, parts in mapping.items():
+                        if not isinstance(parts, list) or len(parts) == 0:
+                            continue
+
+                        resolved_value = ""
+                        for part in parts:
+                            if not isinstance(part, dict):
+                                continue
+                            part_type = part.get('type')
+                            part_val = part.get('value')
+                            if part_type == 'column':
+                                cell_val = row.get(part_val)
+                                if cell_val is not None:
+                                    resolved_value += str(cell_val)
+                            elif part_type == 'text':
+                                if part_val is not None:
+                                    resolved_value += str(part_val)
+                        resolved_mapping[orcanos_field] = resolved_value
+
+                    # Determine path (Add vs Update) based on Object_ID
+                    object_id_val = resolved_mapping.get('Object_ID', '').strip()
+                    is_update = bool(object_id_val)
+
+                    # Build api_body
                     api_body = {}
 
                     # Auto-inject from projectConfig
@@ -493,28 +535,11 @@ def import_data():
                         for idx, f in enumerate(custom_fields)
                     }
 
-
-                    for orcanos_field, parts in mapping.items():
-                        if not isinstance(parts, list) or len(parts) == 0:
-                            continue
-
-                        resolved_value = ""
-                        for part in parts:
-                            if not isinstance(part, dict):
+                    for orcanos_field, resolved_value in resolved_mapping.items():
+                        # If this is Add path, skip empty/whitespace values (existing behavior)
+                        if not is_update:
+                            if not resolved_value.strip():
                                 continue
-                            part_type = part.get('type')
-                            part_val = part.get('value')
-                            if part_type == 'column':
-                                cell_val = row.get(part_val)
-                                if cell_val is not None:
-                                    resolved_value += str(cell_val)
-                            elif part_type == 'text':
-                                if part_val is not None:
-                                    resolved_value += str(part_val)
-
-                        # Skip if value is empty/whitespace only
-                        if not resolved_value.strip():
-                            continue
 
                         # Check if this is a custom field
                         if orcanos_field in custom_field_index:
@@ -528,12 +553,18 @@ def import_data():
                         else:
                             api_body[orcanos_field] = resolved_value
 
+                    if is_update:
+                        try:
+                            api_body['Object_ID'] = int(float(object_id_val))
+                        except ValueError:
+                            api_body['Object_ID'] = object_id_val
+
                     # Parent_ID defaulting
                     if not api_body.get('Parent_ID'):
                         api_body['Parent_ID'] = str(api_body['Project_ID'])
                     
-                    # Validate row
-                    validation_errors = validate_row(api_body, mandatory_fields)
+                    # Validate row if Add
+                    validation_errors = [] if is_update else validate_row(api_body, mandatory_fields)
                     
                     result = {
                         'row': row_idx,
@@ -551,8 +582,11 @@ def import_data():
                     else:
                         # Call Orcanos API
                         try:
+                            if is_update:
+                                url = f"https://{domain}/api/v2/Json/QW_Update_Object"
+                            else:
+                                url = f"https://{domain}/api/v2/Json/QW_Add_Object"
 
-                            url = f"https://{domain}/api/v2/Json/QW_Add_Object"
                             response = requests.post(url, json=api_body, headers=headers, timeout=30)
                             
                             if response.status_code == 200:
@@ -563,18 +597,23 @@ def import_data():
                                     failed_count += 1
                                 else:
                                     object_id = response_data.get('Data', 0)
+                                    fallback_msg = "Object was not updated." if is_update else "Object was not created."
+                                    
                                     if isinstance(object_id, dict):
                                         error_info = object_id.get('ErrorInfo', '')
                                         result['status'] = 'failed'
-                                        result['error'] = error_info if error_info else 'Object was not created.'
+                                        result['error'] = error_info if error_info else fallback_msg
                                         failed_count += 1
                                     elif object_id and isinstance(object_id, (int, float)) and int(object_id) > 0:
-                                        result['status'] = 'success'
-                                        result['objectId'] = object_id
-                                        success_count += 1
+                                        result['status'] = 'updated' if is_update else 'added'
+                                        result['objectId'] = int(object_id)
+                                        if is_update:
+                                            updated_count += 1
+                                        else:
+                                            added_count += 1
                                     else:
                                         result['status'] = 'failed'
-                                        result['error'] = response_data.get('Message', 'Object was not created.')
+                                        result['error'] = response_data.get('Message', fallback_msg)
                                         failed_count += 1
                             else:
                                 result['status'] = 'failed'
@@ -620,7 +659,9 @@ def import_data():
                 'results': results,
                 'summary': {
                     'total': len(data),
-                    'success': success_count,
+                    'success': added_count + updated_count,
+                    'added': added_count,
+                    'updated': updated_count,
                     'failed': failed_count,
                     'skipped': skipped_count
                 }
