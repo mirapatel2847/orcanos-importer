@@ -223,7 +223,18 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
   if (validating) {
     return (
       <div className="bg-white rounded-lg shadow p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Validating Data</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Validating Data</h2>
+          {projectConfig && (
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+              <span>Project:</span>
+              <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+              <span className="text-purple-300">|</span>
+              <span>Item Type:</span>
+              <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+            </div>
+          )}
+        </div>
         <div className="flex flex-col items-center justify-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#7E3F98] border-t-transparent mb-4"></div>
           <p className="text-gray-600 text-lg">Validating your data before import…</p>
@@ -237,7 +248,18 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
   if (validationError) {
     return (
       <div className="bg-white rounded-lg shadow p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Validation Error</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Validation Error</h2>
+          {projectConfig && (
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+              <span>Project:</span>
+              <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+              <span className="text-purple-300">|</span>
+              <span>Item Type:</span>
+              <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+            </div>
+          )}
+        </div>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p className="text-red-600">{validationError}</p>
         </div>
@@ -266,7 +288,18 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
 
     return (
       <div className="bg-white rounded-lg shadow p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Import Data</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Import Data</h2>
+          {projectConfig && (
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+              <span>Project:</span>
+              <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+              <span className="text-purple-300">|</span>
+              <span>Item Type:</span>
+              <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+            </div>
+          )}
+        </div>
 
         {/* Validation Summary Cards */}
         {!importing && (
@@ -427,7 +460,18 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
   if (results) {
     return (
       <div className="bg-white rounded-lg shadow p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Import Results</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Import Results</h2>
+          {projectConfig && (
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+              <span>Project:</span>
+              <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+              <span className="text-purple-300">|</span>
+              <span>Item Type:</span>
+              <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+            </div>
+          )}
+        </div>
 
         {/* Results Table */}
         <div className="mb-6 overflow-x-auto border border-gray-300 rounded-lg">
@@ -457,7 +501,8 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
             <tbody className="divide-y divide-gray-200">
               {results.results.map((result, idx) => (
                 <tr key={idx} className={
-                  result.status === 'added' || result.status === 'updated' ? 'bg-green-50' :
+                  result.status === 'added' ? 'bg-green-50' :
+                  result.status === 'updated' ? 'bg-blue-50' :
                   result.status === 'failed' ? 'bg-red-50' :
                   'bg-gray-50'
                 }>
@@ -466,7 +511,8 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
                   <td className="px-4 py-3 text-sm text-gray-900">{result.objectType}</td>
                   <td className="px-4 py-3 text-sm">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      result.status === 'added' || result.status === 'updated' ? 'bg-green-200 text-green-800' :
+                      result.status === 'added' ? 'bg-green-200 text-green-800' :
+                      result.status === 'updated' ? 'bg-blue-200 text-blue-800' :
                       result.status === 'failed' ? 'bg-red-200 text-red-800' :
                       'bg-gray-200 text-gray-800'
                     }`}>

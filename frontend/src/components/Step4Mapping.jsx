@@ -339,7 +339,7 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
   );
 }
 
-export default function Step4Mapping({ fileData, existingMapping, orcanosFields = [], mandatoryFields = [], onComplete, onBack }) {
+export default function Step4Mapping({ fileData, existingMapping, projectConfig, orcanosFields = [], mandatoryFields = [], onComplete, onBack }) {
   const [mapping, setMapping] = useState({})
   const [error, setError] = useState('')
   
@@ -476,7 +476,18 @@ export default function Step4Mapping({ fileData, existingMapping, orcanosFields 
 
   return (
     <div className="bg-white rounded-lg shadow p-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">Map Fields</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Map Fields</h2>
+        {projectConfig && (
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+            <span>Project:</span>
+            <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+            <span className="text-purple-300">|</span>
+            <span>Item Type:</span>
+            <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+          </div>
+        )}
+      </div>
 
       {/* Load Previous Mapping Button */}
       <div className="mb-6">

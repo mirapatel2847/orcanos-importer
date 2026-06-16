@@ -267,6 +267,7 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
 
       const selectedVersionOption = allProjectVersionPairs.find((o) => o.value === selectedProjectVersionKey)
       const newProjectConfig = {
+        project_name: selectedVersionOption?.label ?? '',
         item_type: selectedItemType.Code,
         object_type_label: selectedItemType.Label,
         project_id: projectId,

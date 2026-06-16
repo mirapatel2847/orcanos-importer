@@ -233,10 +233,10 @@ export default function App() {
             <Step2Project credentials={state.credentials} projectConfig={state.projectConfig}   projectsList={state.projectsList} onComplete={handleStep2Complete} onBack={handleBackStep2} />
           )}
           {state.currentStep === 3 && (
-            <Step3Upload fileData={state.fileData} onComplete={handleStep3Complete} onBack={handleBackStep3} />
+            <Step3Upload fileData={state.fileData} projectConfig={state.projectConfig} onComplete={handleStep3Complete} onBack={handleBackStep3} />
           )}
           {state.currentStep === 4 && (
-            <Step4Mapping fileData={state.fileData} existingMapping={state.mapping} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onComplete={handleStep4Complete} onBack={handleBackStep4} />
+            <Step4Mapping fileData={state.fileData} existingMapping={state.mapping} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onComplete={handleStep4Complete} onBack={handleBackStep4} />
           )}
           {state.currentStep === 5 && (
             <Step5Import fileData={state.fileData} mapping={state.mapping} credentials={state.credentials} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onStartOver={handleStep5StartOver} onBack={handleBackStep5} setImportInProgress={setImportInProgress} />          )}

@@ -34,7 +34,6 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
-MANDATORY_FIELDS = ['Object_Name', 'Description']
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -341,7 +340,7 @@ def validate_import():
         valid_count = 0
         invalid_count = 0
 
-        mandatory_fields = payload.get('mandatory_fields', MANDATORY_FIELDS)
+        mandatory_fields = payload.get('mandatory_fields', [])
 
         # Build reverse mapping: orcanos_field -> excel_col
         for row_idx, row in enumerate(data, 1):
@@ -473,13 +472,13 @@ def import_data():
         
         if not isinstance(mapping, dict):
             return jsonify({"error": "Mapping must be a dictionary"}), 400
-        
+
         results = []
         added_count = 0
         updated_count = 0
         failed_count = 0
         skipped_count = 0
-        mandatory_fields = payload.get('mandatory_fields', MANDATORY_FIELDS)
+        mandatory_fields = payload.get('mandatory_fields', [])
         
         def generate():
             nonlocal added_count, updated_count, failed_count, skipped_count
@@ -600,7 +599,9 @@ def import_data():
                                     fallback_msg = "Object was not updated." if is_update else "Object was not created."
                                     
                                     if isinstance(object_id, dict):
-                                        error_info = object_id.get('ErrorInfo', '')
+                                        error_info = object_id.get('ErrorInfo', '') or ''
+                                        if "There is no row at position 0." in error_info:
+                                            error_info = "object does not exist"
                                         result['status'] = 'failed'
                                         result['error'] = error_info if error_info else fallback_msg
                                         failed_count += 1
@@ -612,8 +613,11 @@ def import_data():
                                         else:
                                             added_count += 1
                                     else:
+                                        msg = response_data.get('Message', '') or ''
+                                        if "There is no row at position 0." in msg:
+                                            msg = "object does not exist"
                                         result['status'] = 'failed'
-                                        result['error'] = response_data.get('Message', fallback_msg)
+                                        result['error'] = msg if msg else fallback_msg
                                         failed_count += 1
                             else:
                                 result['status'] = 'failed'
