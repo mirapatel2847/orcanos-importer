@@ -1,16 +1,31 @@
 import { useState } from 'react'
-import API_URL from '../api.js';
+import API_URL from '../api.js'
+
+function isTestCase(projectConfig) {
+  const label = (projectConfig?.object_type_label || '').toLowerCase()
+  const code  = (projectConfig?.item_type || '').toLowerCase()
+  return label.includes('test case') || code === 'tc'
+}
 
 export default function Step3Upload({ fileData: initialFileData, projectConfig, onComplete, onBack }) {
-  const [fileData, setFileData] = useState(initialFileData)
-  const [fileName, setFileName] = useState(initialFileData ? 'Previously uploaded file' : '')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [fileData, setFileData]     = useState(initialFileData)
+  const [fileName, setFileName]     = useState(initialFileData ? 'Previously uploaded file' : '')
+  const [error, setError]           = useState('')
+  const [loading, setLoading]       = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [fileChanged, setFileChanged] = useState(false)
 
+  // Sheet-selection state (Test Case only)
+  const [sheetNames, setSheetNames]   = useState(initialFileData?.sheetNames || null)
+  const [mainSheet, setMainSheet]     = useState('')
+  const [stepsSheet, setStepsSheet]   = useState('None')
+  const [pendingFile, setPendingFile] = useState(null)  // File object held for second call
+  const [sheetLoading, setSheetLoading] = useState(false)
+
+  const testCase = isTestCase(projectConfig)
+
+  // ─── First upload call ──────────────────────────────────────────────────────
   const handleFileUpload = async (file) => {
-    // Validate file type
     if (!file.name.endsWith('.xlsx')) {
       setError('Please upload a valid Excel (.xlsx) file')
       return
@@ -18,6 +33,11 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
 
     setError('')
     setLoading(true)
+    setFileData(null)
+    setSheetNames(null)
+    setMainSheet('')
+    setStepsSheet('None')
+    setPendingFile(null)
 
     const formData = new FormData()
     formData.append('file', file)
@@ -36,10 +56,27 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
         return
       }
 
-      setFileData(data)
-      setFileName(file.name)
-      setFileChanged(true)
-      setError('')
+      if (testCase) {
+        // Store sheet names and raw file for second call
+        const sheets = data.sheetNames || []
+        setSheetNames(sheets)
+        setPendingFile(file)
+        setFileName(file.name)
+        setFileChanged(true)
+
+        // If only one sheet exists, auto-confirm immediately
+        if (sheets.length === 1) {
+          setMainSheet(sheets[0])
+          // Trigger second call right away
+          await confirmSheetSelection(file, sheets[0], 'None', data)
+        }
+      } else {
+        // Non-Test-Case: behave exactly as before
+        setFileData(data)
+        setFileName(file.name)
+        setFileChanged(true)
+        setError('')
+      }
     } catch (err) {
       setError('Error uploading file: ' + err.message)
     } finally {
@@ -47,6 +84,51 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
     }
   }
 
+  // ─── Second call: read selected sheets ─────────────────────────────────────
+  const confirmSheetSelection = async (file, main, steps, firstCallData) => {
+    const fileToUse = file || pendingFile
+    if (!fileToUse) return
+
+    setSheetLoading(true)
+    setError('')
+
+    const formData = new FormData()
+    formData.append('file', fileToUse)
+    formData.append('mainSheet', main)
+    if (steps && steps !== 'None') {
+      formData.append('stepsSheet', steps)
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/upload`, {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || 'Error reading selected sheets')
+        return
+      }
+
+      setFileData({
+        ...data,
+        sheetNames: firstCallData?.sheetNames || sheetNames
+      })
+      setError('')
+    } catch (err) {
+      setError('Error reading selected sheets: ' + err.message)
+    } finally {
+      setSheetLoading(false)
+    }
+  }
+
+  const handleConfirmSheets = () => {
+    confirmSheetSelection(null, mainSheet, stepsSheet, null)
+  }
+
+  // ─── Drag & drop helpers ────────────────────────────────────────────────────
   const handleDrag = (e) => {
     e.preventDefault()
     e.stopPropagation()
@@ -61,7 +143,6 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(e.dataTransfer.files[0])
     }
@@ -73,6 +154,20 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
     }
   }
 
+  const resetUpload = () => {
+    setFileData(null)
+    setFileName('')
+    setSheetNames(null)
+    setMainSheet('')
+    setStepsSheet('None')
+    setPendingFile(null)
+    setError('')
+  }
+
+  // ─── Sheet-selection panel (Test Case, multiple sheets) ────────────────────
+  const showSheetSelector = testCase && sheetNames && sheetNames.length > 1 && !fileData
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="bg-white rounded-lg shadow p-6 sm:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -83,14 +178,14 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
             <span className="text-purple-300">|</span>
             <span>Item Type:</span>
-            <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+            <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || ''}</span>
           </div>
         )}
       </div>
 
-      {!fileData ? (
+      {/* ── Upload area (shown when no file/sheets yet) ── */}
+      {!fileData && !showSheetSelector && (
         <div>
-          {/* Upload Area */}
           <div
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
@@ -118,14 +213,12 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             <p className="text-gray-500 text-xs mt-4">Only .xlsx files are supported</p>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-600 text-xs sm:text-sm">{error}</p>
             </div>
           )}
 
-          {/* Loading State */}
           {loading && (
             <div className="mt-4 flex items-center justify-center">
               <svg className="animate-spin h-5 w-5 text-[#7E3F98]" viewBox="0 0 24 24">
@@ -136,9 +229,86 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {/* ── Sheet selection panel (Test Case, multiple sheets) ── */}
+      {showSheetSelector && (
+        <div className="space-y-5">
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
+            <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="text-sm font-medium text-gray-800">{fileName}</p>
+              <p className="text-xs text-gray-500">{sheetNames.length} sheets found</p>
+            </div>
+            <button
+              onClick={resetUpload}
+              className="ml-auto text-xs text-[#7E3F98] hover:text-[#682e82] font-medium"
+            >
+              Change file
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Main Sheet <span className="text-red-500">*</span>
+              <span className="text-gray-400 font-normal ml-1">(test case fields)</span>
+            </label>
+            <select
+              value={mainSheet}
+              onChange={e => setMainSheet(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7E3F98] bg-white"
+            >
+              <option value="">— Select a sheet —</option>
+              {sheetNames.map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Steps Sheet
+              <span className="text-gray-400 font-normal ml-1">(optional)</span>
+            </label>
+            <select
+              value={stepsSheet}
+              onChange={e => setStepsSheet(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7E3F98] bg-white"
+            >
+              <option value="None">None</option>
+              {sheetNames.filter(n => n !== mainSheet).map(name => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          </div>
+
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-red-600 text-xs sm:text-sm">{error}</p>
+            </div>
+          )}
+
+          <button
+            onClick={handleConfirmSheets}
+            disabled={!mainSheet || sheetLoading}
+            className="w-full bg-[#7E3F98] hover:bg-[#682e82] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2"
+          >
+            {sheetLoading && (
+              <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            )}
+            {sheetLoading ? 'Loading sheets…' : 'Confirm Sheet Selection'}
+          </button>
+        </div>
+      )}
+
+      {/* ── File preview (after successful load) ── */}
+      {fileData && (
         <div>
-          {/* File Info */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="text-xs sm:text-sm text-gray-600">
               <span className="font-medium">File:</span> {fileName}
@@ -146,9 +316,13 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             <p className="text-xs sm:text-sm text-gray-600">
               <span className="font-medium">Total Rows:</span> {fileData.totalRows}
             </p>
+            {fileData.stepsData && (
+              <p className="text-xs sm:text-sm text-gray-600">
+                <span className="font-medium">Steps Rows:</span> {fileData.stepsData.length}
+              </p>
+            )}
           </div>
 
-          {/* Preview Table */}
           {fileData.preview && fileData.preview.length > 0 && (
             <div className="mb-6">
               <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">Preview (First 5 Rows)</h3>
@@ -179,13 +353,8 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             </div>
           )}
 
-          {/* Upload Another Option */}
           <button
-            onClick={() => {
-              setFileData(null)
-              setFileName('')
-              setError('')
-            }}
+            onClick={resetUpload}
             className="text-[#7E3F98] hover:text-[#682e82] text-xs sm:text-sm font-medium mb-6"
           >
             Upload different file
@@ -193,7 +362,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
         </div>
       )}
 
-      {/* Action Buttons */}
+      {/* ── Action Buttons ── */}
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <button
           onClick={onBack}

@@ -339,9 +339,40 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
   );
 }
 
+// Step fields definition for steps mapping
+const STEP_FIELDS = [
+  { key: 'StepNumber',    label: 'Step Number',     mandatory: false },
+  { key: 'Description',   label: 'Description',      mandatory: true  },
+  { key: 'ExpectedValue', label: 'Expected Value',   mandatory: false },
+  { key: 'LowerLimit',    label: 'Lower Limit',      mandatory: false },
+  { key: 'UpperLimit',    label: 'Upper Limit',      mandatory: false },
+]
+
+function buildEmptyStepsMapping(stepsHeaders) {
+  const m = {}
+  STEP_FIELDS.forEach(f => {
+    // Try to auto-match header by field key or label
+    const cleanKey   = f.key.toLowerCase().replace(/[_\s-]+/g, '')
+    const cleanLabel = f.label.toLowerCase().replace(/[_\s-]+/g, '')
+    const match = stepsHeaders.find(h => {
+      const nh = (h || '').trim().toLowerCase().replace(/[_\s-]+/g, '')
+      return nh === cleanKey || nh === cleanLabel
+    })
+    m[f.key] = match
+      ? [{ type: 'text', value: '' }, { type: 'column', value: match }, { type: 'text', value: '' }]
+      : [{ type: 'text', value: '' }]
+  })
+  return m
+}
+
 export default function Step4Mapping({ fileData, existingMapping, projectConfig, orcanosFields = [], mandatoryFields = [], onComplete, onBack }) {
   const [mapping, setMapping] = useState({})
+  const [stepsMapping, setStepsMapping] = useState({})
+  const [testCaseLinkColumn, setTestCaseLinkColumn] = useState('')
+  const [stepsLinkColumn, setStepsLinkColumn] = useState('')
   const [error, setError] = useState('')
+
+  const hasSteps = !!(fileData?.stepsData && fileData.stepsData.length > 0)
   
   const mappedFields = (() => {
     let fields = [...orcanosFields];
@@ -397,6 +428,20 @@ export default function Step4Mapping({ fileData, existingMapping, projectConfig,
       })
       setMapping(parseAndNormalizeMapping(autoMapping))
     }
+
+    // Auto-init steps mapping
+    if (hasSteps) {
+      setStepsMapping(buildEmptyStepsMapping(fileData.stepsHeaders || []))
+      // Try to auto-detect link columns: look for common names like "test case number", "tc number", "tc no", etc.
+      const tcHeaders   = fileData.headers       || []
+      const stepHeaders = fileData.stepsHeaders  || []
+
+      const linkKeywords = ['testcasenumber', 'tcnumber', 'tcno', 'testcaseid', 'tcid', 'caseno', 'casenumber']
+      const findLink = (arr) => arr.find(h => linkKeywords.includes((h || '').toLowerCase().replace(/[\s_-]+/g, ''))) || ''
+
+      setTestCaseLinkColumn(findLink(tcHeaders)   || (tcHeaders[0]   || ''))
+      setStepsLinkColumn(   findLink(stepHeaders) || (stepHeaders[0] || ''))
+    }
   }, [fileData, existingMapping, orcanosFields])
 
   const handleMappingChange = (orcanosField, parts) => {
@@ -407,7 +452,32 @@ export default function Step4Mapping({ fileData, existingMapping, projectConfig,
     setError('')
   }
 
+  const handleStepsMappingChange = (stepField, parts) => {
+    setStepsMapping(prev => ({
+      ...prev,
+      [stepField]: parts
+    }))
+    setError('')
+  }
+
   const validateMapping = () => {
+    if (hasSteps) {
+      // Description is mandatory for steps
+      const descParts = stepsMapping['Description'] || []
+      const descEmpty = !descParts.some(p => p.type === 'column' || (p.type === 'text' && p.value.trim() !== ''))
+      if (descEmpty) {
+        setError('Steps Description mapping is required.')
+        return false
+      }
+      if (!testCaseLinkColumn) {
+        setError('Please select the Test Case link column from the main sheet.')
+        return false
+      }
+      if (!stepsLinkColumn) {
+        setError('Please select the Steps link column from the steps sheet.')
+        return false
+      }
+    }
     return true
   }
 
@@ -433,7 +503,6 @@ export default function Step4Mapping({ fileData, existingMapping, projectConfig,
   }
 
   const handleSaveMapping = () => {
-    // Serialize all mappings before saving
     const serializedMapping = {};
     Object.entries(mapping).forEach(([field, parts]) => {
       serializedMapping[field] = serializeParts(parts);
@@ -457,13 +526,22 @@ export default function Step4Mapping({ fileData, existingMapping, projectConfig,
   const handleSaveAndImport = () => {
     if (!validateMapping()) return
     
-    // Serialize all mappings before passing to parent
     const serializedMapping = {};
     Object.entries(mapping).forEach(([field, parts]) => {
       serializedMapping[field] = serializeParts(parts);
     });
 
-    onComplete(serializedMapping)
+    const serializedStepsMapping = {};
+    Object.entries(stepsMapping).forEach(([field, parts]) => {
+      serializedStepsMapping[field] = serializeParts(parts);
+    });
+
+    onComplete({
+      mapping: serializedMapping,
+      stepsMapping: hasSteps ? serializedStepsMapping : null,
+      testCaseLinkColumn: hasSteps ? testCaseLinkColumn : null,
+      stepsLinkColumn: hasSteps ? stepsLinkColumn : null,
+    })
   }
 
   if (!fileData || !fileData.headers) {
@@ -484,7 +562,7 @@ export default function Step4Mapping({ fileData, existingMapping, projectConfig,
             <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
             <span className="text-purple-300">|</span>
             <span>Item Type:</span>
-            <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+            <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
           </div>
         )}
       </div>
@@ -507,6 +585,14 @@ export default function Step4Mapping({ fileData, existingMapping, projectConfig,
         <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-600 text-sm">{error}</p>
         </div>
+      )}
+
+      {/* ── Section 1: Test Case Fields ── */}
+      {hasSteps && (
+        <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+          <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-700 text-xs flex items-center justify-center font-bold">1</span>
+          Test Case Fields
+        </h3>
       )}
 
       {/* Mapping Table */}
@@ -555,6 +641,95 @@ export default function Step4Mapping({ fileData, existingMapping, projectConfig,
           </tbody>
         </table>
       </div>
+
+      {/* ── Section 2: Step Fields (only when stepsData present) ── */}
+      {hasSteps && (
+        <div className="mb-8">
+          <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
+            Step Fields
+          </h3>
+
+          {/* Link column selectors */}
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div>
+              <label className="block text-xs font-semibold text-blue-800 mb-1">
+                Test Case link column <span className="text-red-500">*</span>
+                <span className="font-normal text-blue-600 ml-1">(main sheet)</span>
+              </label>
+              <select
+                value={testCaseLinkColumn}
+                onChange={e => setTestCaseLinkColumn(e.target.value)}
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="">— Select column —</option>
+                {fileData.headers.map(h => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <p className="text-xs text-blue-600 mt-1">The column in the main sheet that contains the test case number / ID</p>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-blue-800 mb-1">
+                Steps link column <span className="text-red-500">*</span>
+                <span className="font-normal text-blue-600 ml-1">(steps sheet)</span>
+              </label>
+              <select
+                value={stepsLinkColumn}
+                onChange={e => setStepsLinkColumn(e.target.value)}
+                className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+              >
+                <option value="">— Select column —</option>
+                {(fileData.stepsHeaders || []).map(h => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <p className="text-xs text-blue-600 mt-1">The column in the steps sheet that references the test case number / ID</p>
+            </div>
+          </div>
+
+          {/* Steps mapping table */}
+          <div className="overflow-visible border border-gray-300 rounded-lg">
+            <table className="min-w-full divide-y divide-gray-200 table-fixed">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-1/3">
+                    Step Field
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider w-2/3">
+                    Mapping Builder
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {STEP_FIELDS.map((field, idx) => {
+                  const currentParts = stepsMapping[field.key] || [{ type: 'text', value: '' }];
+                  return (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-6 py-2 text-sm font-semibold text-gray-700 w-1/3 align-middle">
+                        <div className="flex items-center gap-1">
+                          <span>{field.label}</span>
+                          {field.mandatory && (
+                            <span className="text-red-500 font-bold" title="Mandatory field">*</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-2 text-sm w-2/3 align-middle overflow-visible">
+                        <MappingInputBuilder
+                          value={currentParts}
+                          onChange={(newParts) => handleStepsMappingChange(field.key, newParts)}
+                          excelColumns={fileData.stepsHeaders || []}
+                          isMandatory={field.mandatory}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Mandatory Fields Info */}
       {mandatoryFields.length > 0 && (

@@ -34,6 +34,9 @@ export default function App() {
     mandatoryFields: savedSession?.mandatoryFields || [],
     fileData: null,
     mapping: null,
+    stepsMapping: null,
+    testCaseLinkColumn: null,
+    stepsLinkColumn: null,
     results: null,
     projectsList: savedSession?.projectsList || []
   })
@@ -139,12 +142,15 @@ export default function App() {
     }, 300)
   }
 
-  const handleStep4Complete = (mapping) => {
+  const handleStep4Complete = ({ mapping, stepsMapping, testCaseLinkColumn, stepsLinkColumn }) => {
     setFadeIn(false)
     setTimeout(() => {
       setState(prev => ({
         ...prev,
         mapping,
+        stepsMapping: stepsMapping || null,
+        testCaseLinkColumn: testCaseLinkColumn || null,
+        stepsLinkColumn: stepsLinkColumn || null,
         results: null,
         currentStep: 5
       }))
@@ -176,6 +182,9 @@ export default function App() {
         mandatoryFields: [],
         fileData: null,
         mapping: null,
+        stepsMapping: null,
+        testCaseLinkColumn: null,
+        stepsLinkColumn: null,
         results: null
       })
       setFadeIn(true)
@@ -194,6 +203,9 @@ export default function App() {
         mandatoryFields: [],
         fileData: null,
         mapping: null,
+        stepsMapping: null,
+        testCaseLinkColumn: null,
+        stepsLinkColumn: null,
         results: null
       })
       setFadeIn(true)
@@ -239,7 +251,7 @@ export default function App() {
             <Step4Mapping fileData={state.fileData} existingMapping={state.mapping} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onComplete={handleStep4Complete} onBack={handleBackStep4} />
           )}
           {state.currentStep === 5 && (
-            <Step5Import fileData={state.fileData} mapping={state.mapping} credentials={state.credentials} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onStartOver={handleStep5StartOver} onBack={handleBackStep5} setImportInProgress={setImportInProgress} />          )}
+            <Step5Import fileData={state.fileData} mapping={state.mapping} stepsMapping={state.stepsMapping} testCaseLinkColumn={state.testCaseLinkColumn} stepsLinkColumn={state.stepsLinkColumn} credentials={state.credentials} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onStartOver={handleStep5StartOver} onBack={handleBackStep5} setImportInProgress={setImportInProgress} />          )}
         </div>
       </div>
     </div>

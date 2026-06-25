@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import API_URL from '../api.js';
 
-export default function Step5Import({ fileData, mapping, credentials, projectConfig, orcanosFields = [], mandatoryFields = [], onStartOver, onBack, setImportInProgress }) {
+export default function Step5Import({ fileData, mapping, stepsMapping, testCaseLinkColumn, stepsLinkColumn, credentials, projectConfig, orcanosFields = [], mandatoryFields = [], onStartOver, onBack, setImportInProgress }) {
   // Validation state
   const [validating, setValidating] = useState(true)
   const [validation, setValidation] = useState(null)
@@ -90,7 +90,14 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
             return /^CS\d+_Name$/.test(wsName) ? wsName.replace('_Name', '_value') : wsName
           }),        
           projectConfig: projectConfig,
-          orcanosFields: orcanosFields
+          orcanosFields: orcanosFields,
+          // Steps import fields (only present for Test Case with steps)
+          ...(stepsMapping && fileData?.stepsData?.length > 0 ? {
+            stepsData: fileData.stepsData,
+            stepsMapping,
+            testCaseLinkColumn,
+            stepsLinkColumn
+          } : {})
         })
       })
 
@@ -149,7 +156,10 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
   const handleExportResults = () => {
     if (!results || !results.results) return;
 
-    const headers = ['Row', 'Object Name', 'Object Type', 'Status', 'Object ID', 'Error Message'];
+    const hasStepsCols = results.results.some(r => r.stepsTotal != null)
+    const headers = ['Row', 'Object Name', 'Object Type', 'Status', 'Object ID', 'Error Message',
+      ...(hasStepsCols ? ['Steps Added', 'Steps Failed'] : [])
+    ];
 
     // Build rows as plain arrays; we'll patch the Object ID cells afterwards
     const dataRows = results.results.map(r => [
@@ -158,7 +168,8 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
       r.objectType || '',
       r.status,
       null,           // placeholder — filled below with hyperlink or plain value
-      r.error || ''
+      r.error || '',
+      ...(hasStepsCols ? [r.stepsAdded ?? '', r.stepsFailed ?? ''] : [])
     ]);
 
     const aoa = [headers, ...dataRows];
@@ -231,7 +242,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
               <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
               <span>Item Type:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+              <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
             </div>
           )}
         </div>
@@ -256,7 +267,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
               <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
               <span>Item Type:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+              <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
             </div>
           )}
         </div>
@@ -296,7 +307,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
               <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
               <span>Item Type:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+              <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
             </div>
           )}
         </div>
@@ -468,7 +479,7 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
               <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
               <span>Item Type:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.item_type || projectConfig.itemType || ''}</span>
+              <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
             </div>
           )}
         </div>
@@ -493,6 +504,11 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Object ID
                 </th>
+                {results.results.some(r => r.stepsTotal != null) && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    Steps
+                  </th>
+                )}
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Error Message
                 </th>
@@ -543,6 +559,22 @@ export default function Step5Import({ fileData, mapping, credentials, projectCon
                       <span className="text-gray-400">—</span>
                     )}
                   </td>
+                  {results.results.some(r => r.stepsTotal != null) && (
+                    <td className="px-4 py-3 text-sm">
+                      {result.stepsTotal != null ? (
+                        <span className={`text-xs font-medium ${
+                          result.stepsFailed > 0 ? 'text-red-600' : 'text-green-700'
+                        }`}>
+                          {result.stepsAdded}/{result.stepsTotal} added
+                          {result.stepsFailed > 0 && (
+                            <span className="text-red-500 ml-1">({result.stepsFailed} failed)</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+                  )}
                   <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
                     {result.error}
                   </td>

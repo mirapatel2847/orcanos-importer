@@ -212,10 +212,8 @@ def upload_file():
             return jsonify({"error": "No file provided"}), 400
         
         file = request.files['file']
-        
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
-        
         if not allowed_file(file.filename):
             return jsonify({"error": "Please upload a valid Excel (.xlsx) file"}), 400
         
@@ -223,67 +221,79 @@ def upload_file():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         
-        # Read Excel file into memory
-        try:
-            wb = load_workbook(filepath)
-            ws = wb.active
-            
-            # Extract headers from first row
-            headers = []
+        wb = load_workbook(filepath, data_only=True)
+        sheet_names = wb.sheetnames
+        main_sheet_name = request.form.get('mainSheet', '').strip()
+        steps_sheet_name = request.form.get('stepsSheet', '').strip()
+
+        def read_sheet(ws):
+            """Read a worksheet and return (headers, all_rows, preview_rows, row_count)."""
+            hdrs = []
             for cell in ws[1]:
-                headers.append(cell.value if cell.value is not None else '')
-            
-            # Extract all data rows
+                hdrs.append(cell.value if cell.value is not None else '')
             all_rows = []
-            preview_rows = []
-            row_count = 0
-            
-            for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=False), start=2):
-                # Check if row is completely empty
+            preview = []
+            count = 0
+            for row in ws.iter_rows(min_row=2, values_only=False):
                 row_values = [cell.value for cell in row]
                 if all(v is None for v in row_values):
                     continue
-                
-                # Convert row to dict
                 row_dict = {}
                 for col_idx, cell in enumerate(row):
-                    header = headers[col_idx] if col_idx < len(headers) else f"Column {col_idx + 1}"
+                    header = hdrs[col_idx] if col_idx < len(hdrs) else f"Column {col_idx + 1}"
                     row_dict[header] = cell.value
-                
                 all_rows.append(row_dict)
-                if len(preview_rows) < 5:
-                    preview_rows.append(row_dict)
-                row_count += 1
-            
-            wb.close()
-        except Exception as read_err:
-            return jsonify({"error": f"Error reading Excel file: {str(read_err)}"}), 500
-        finally:
-            # Try to clean up temp file - don't fail if it can't be deleted
-            try:
-                if os.path.exists(filepath):
-                    os.remove(filepath)
-            except Exception as cleanup_err:
-                # Log but don't fail - file will be cleaned up later
-                print(f"Warning: Could not delete temp file {filepath}: {str(cleanup_err)}")
-        
+                if len(preview) < 5:
+                    preview.append(row_dict)
+                count += 1
+            return hdrs, all_rows, preview, count
+
+        # Determine which worksheet to use for main data
+        if main_sheet_name and main_sheet_name in sheet_names:
+            ws_main = wb[main_sheet_name]
+        else:
+            # Mode 1 (no sheet selected yet) or non-Test-Case flow: use active sheet
+            ws_main = wb.active
+
+        main_headers, main_rows, main_preview, main_count = read_sheet(ws_main)
+
+        # Read steps sheet if specified
+        steps_headers = None
+        steps_data = None
+        if steps_sheet_name and steps_sheet_name not in ('None', '') and steps_sheet_name in sheet_names:
+            ws_steps = wb[steps_sheet_name]
+            steps_headers, steps_data, _, _ = read_sheet(ws_steps)
+
+        wb.close()
+        try:
+            if os.path.exists(filepath):
+                os.remove(filepath)
+        except Exception as cleanup_err:
+            print(f"Warning: Could not delete temp file {filepath}: {str(cleanup_err)}")
+
+        response_body = {
+            "headers": main_headers,
+            "preview": main_preview,
+            "data": main_rows,
+            "totalRows": main_count,
+            "sheetNames": sheet_names
+        }
+        if steps_headers is not None:
+            response_body["stepsHeaders"] = steps_headers
+        if steps_data is not None:
+            response_body["stepsData"] = steps_data
+
         return Response(
-            json.dumps({
-                "headers": headers,
-                "preview": preview_rows,
-                "data": all_rows,
-                "totalRows": row_count
-            }, default=serialize_value),
+            json.dumps(response_body, default=serialize_value),
             mimetype='application/json',
             status=200
         )
-    
     except Exception as e:
         return jsonify({"error": f"Error processing file: {str(e)}"}), 500
 
 def validate_row(api_body, mandatory_fields=None):
     if mandatory_fields is None:
-        mandatory_fields = MANDATORY_FIELDS
+        mandatory_fields = []
         
     reasons = []
     
@@ -410,6 +420,9 @@ def validate_import():
             if not api_body.get('Parent_ID'):
                 api_body['Parent_ID'] = str(api_body['Project_ID'])
 
+            if is_update and api_body.get('Object_Type') == 'T_CASE':
+                api_body.pop('Release_Version', None)
+
             if is_update:
                 reasons = []
             else:
@@ -479,10 +492,32 @@ def import_data():
         failed_count = 0
         skipped_count = 0
         mandatory_fields = payload.get('mandatory_fields', [])
+
+        # Steps import fields (only present for Test Case with steps sheet)
+        steps_data       = payload.get('stepsData') or []
+        steps_mapping    = payload.get('stepsMapping') or {}
+        tc_link_col      = payload.get('testCaseLinkColumn', '')  # column in main sheet
+        step_link_col    = payload.get('stepsLinkColumn', '')     # column in steps sheet
+        has_steps_import = bool(steps_data and steps_mapping and tc_link_col and step_link_col)
         
         def generate():
             nonlocal added_count, updated_count, failed_count, skipped_count
-            
+
+            def resolve_parts(parts, row):
+                """Resolve a mapping parts list against a data row, returning the string value."""
+                resolved = ""
+                for part in (parts or []):
+                    if not isinstance(part, dict):
+                        continue
+                    if part.get('type') == 'column':
+                        cell_val = row.get(part.get('value'))
+                        if cell_val is not None:
+                            resolved += str(cell_val)
+                    elif part.get('type') == 'text':
+                        if part.get('value') is not None:
+                            resolved += str(part.get('value'))
+                return resolved
+
             for row_idx, row in enumerate(data, 1):
                 try:
                     # Resolve all mapped fields
@@ -562,6 +597,9 @@ def import_data():
                     if not api_body.get('Parent_ID'):
                         api_body['Parent_ID'] = str(api_body['Project_ID'])
                     
+                    if is_update and api_body.get('Object_Type') == 'T_CASE':
+                        api_body.pop('Release_Version', None)
+                    
                     # Validate row if Add
                     validation_errors = [] if is_update else validate_row(api_body, mandatory_fields)
                     
@@ -612,6 +650,48 @@ def import_data():
                                             updated_count += 1
                                         else:
                                             added_count += 1
+
+                                        # ── Import steps if available ──────────────────
+                                        if has_steps_import:
+                                            resolved_tc_key = str(row.get(tc_link_col, '')).strip()
+                                            matching_steps = [
+                                                s for s in steps_data
+                                                if str(s.get(step_link_col, '')).strip() == resolved_tc_key
+                                            ]
+                                            steps_total  = len(matching_steps)
+                                            steps_added  = 0
+                                            steps_failed = 0
+
+                                            for step_row in matching_steps:
+                                                step_body = {
+                                                    'ItemId':        int(object_id),
+                                                    'ObjectType':    'OBJECT',
+                                                    'StepNumber':    resolve_parts(steps_mapping.get('StepNumber'),    step_row).strip(),
+                                                    'Description':   resolve_parts(steps_mapping.get('Description'),   step_row).strip(),
+                                                    'ExpectedValue': resolve_parts(steps_mapping.get('ExpectedValue'), step_row).strip(),
+                                                    'LowerLimit':    resolve_parts(steps_mapping.get('LowerLimit'),    step_row).strip(),
+                                                    'UpperLimit':    resolve_parts(steps_mapping.get('UpperLimit'),    step_row).strip(),
+                                                }
+                                                try:
+                                                    step_url = f"https://{domain}/api/v2/Json/AddStep"
+                                                    step_resp = requests.post(
+                                                        step_url, json=step_body,
+                                                        headers=headers, timeout=30
+                                                    )
+                                                    if step_resp.status_code == 200:
+                                                        step_data, step_err = parse_orcanos_json(step_resp)
+                                                        if step_err or not step_data or not step_data.get('IsSuccess'):
+                                                            steps_failed += 1
+                                                        else:
+                                                            steps_added += 1
+                                                    else:
+                                                        steps_failed += 1
+                                                except Exception:
+                                                    steps_failed += 1
+
+                                            result['stepsTotal']  = steps_total
+                                            result['stepsAdded']  = steps_added
+                                            result['stepsFailed'] = steps_failed
                                     else:
                                         msg = response_data.get('Message', '') or ''
                                         if "There is no row at position 0." in msg:
