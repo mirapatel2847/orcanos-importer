@@ -45,9 +45,13 @@ export default function SearchableSelect({
   const [openUpward, setOpenUpward] = useState(false)
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0, bottom: 0 })
   const [search, setSearch] = useState('')
+  const [highlightedIndex, setHighlightedIndex] = useState(0)
+
   const containerRef = useRef(null)
   const dropdownRef = useRef(null)
   const searchRef = useRef(null)
+  const triggerRef = useRef(null)
+  const activeOptionRef = useRef(null)
 
   const selectedOption = options.find((o) => o.value === value)
   const displayLabel = selectedOption?.label || (value ? value : placeholder)
@@ -63,6 +67,8 @@ export default function SearchableSelect({
   }
 
   const openDropdown = () => {
+    setSearch('')
+    setHighlightedIndex(0)
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       const upward = shouldOpenUpward(rect, containerRef.current)
@@ -79,6 +85,35 @@ export default function SearchableSelect({
     setOpen(true)
   }
 
+  // Focus return to trigger on close
+  const wasOpen = useRef(open)
+  useEffect(() => {
+    if (wasOpen.current && !open) {
+      triggerRef.current?.focus()
+    }
+    wasOpen.current = open
+  }, [open])
+
+  // Reset highlightedIndex on search change
+  useEffect(() => {
+    setHighlightedIndex(0)
+  }, [search])
+
+  // Scroll active option into view
+  useEffect(() => {
+    if (open && activeOptionRef.current) {
+      activeOptionRef.current.scrollIntoView({ block: 'nearest' })
+    }
+  }, [highlightedIndex, open])
+
+  // Auto-focus search input
+  useEffect(() => {
+    if (open && searchRef.current) {
+      searchRef.current.focus()
+    }
+  }, [open])
+
+  // Click outside handling
   useEffect(() => {
     if (!open) return
 
@@ -105,16 +140,43 @@ export default function SearchableSelect({
     }
   }, [open])
 
-  useEffect(() => {
-    if (open && searchRef.current) {
-      searchRef.current.focus()
-    }
-  }, [open])
-
   const handleSelect = (option) => {
     if (option.disabled) return
     onChange(option.value)
     close()
+  }
+
+  const handleTriggerKeyDown = (e) => {
+    if (disabled) return
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      openDropdown()
+    }
+  }
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      if (filteredOptions.length > 0) {
+        setHighlightedIndex((prev) => (prev + 1) % filteredOptions.length)
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (filteredOptions.length > 0) {
+        setHighlightedIndex((prev) => (prev - 1 + filteredOptions.length) % filteredOptions.length)
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (filteredOptions.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+        const opt = filteredOptions[highlightedIndex]
+        if (!opt.disabled) {
+          handleSelect(opt)
+        }
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      close()
+    }
   }
 
   const dropdownStyle = openUpward
@@ -134,26 +196,43 @@ export default function SearchableSelect({
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          onKeyDown={handleSearchKeyDown}
           placeholder={searchPlaceholder}
+          role="combobox"
+          aria-expanded={open}
+          aria-autocomplete="list"
+          aria-controls="options-listbox"
+          aria-activedescendant={open && filteredOptions.length > 0 ? `option-${highlightedIndex}` : undefined}
           className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7E3F98]"
         />
       </div>
-      <ul className="max-h-48 overflow-y-auto overscroll-contain py-1">
+      <ul
+        id="options-listbox"
+        role="listbox"
+        className="max-h-48 overflow-y-auto overscroll-contain py-1"
+      >
         {filteredOptions.length === 0 ? (
           <li className="px-3 py-2 text-sm text-gray-500">No matching fields</li>
         ) : (
           filteredOptions.map((option, index) => (
             <li key={`${option.value}-${index}`}>
               <button
+                id={`option-${index}`}
+                role="option"
+                aria-selected={option.value === value}
+                ref={index === highlightedIndex ? activeOptionRef : null}
                 type="button"
                 disabled={option.disabled}
                 onClick={() => handleSelect(option)}
+                tabIndex={-1}
                 className={`w-full text-left px-3 py-2 text-sm transition-colors ${
                   option.disabled
                     ? 'text-gray-400 cursor-not-allowed'
-                    : option.value === value
-                      ? 'bg-purple-50 text-[#7E3F98]'
-                      : 'text-gray-700 hover:bg-gray-100'
+                    : index === highlightedIndex
+                      ? 'bg-purple-100 text-[#7E3F98]'
+                      : option.value === value
+                        ? 'bg-purple-50 text-[#7E3F98]'
+                        : 'text-gray-700 hover:bg-gray-100'
                 } ${option.bold ? 'font-semibold' : ''}`}
               >
                 {option.label}
@@ -168,9 +247,13 @@ export default function SearchableSelect({
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => !disabled && (open ? close() : openDropdown())}
+        onKeyDown={handleTriggerKeyDown}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className={`w-full px-3 py-2 border rounded-lg text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#7E3F98] transition-colors flex items-center justify-between gap-2 ${
           disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''
         } ${className}`}

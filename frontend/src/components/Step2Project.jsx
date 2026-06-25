@@ -1,5 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from 'react'
-import { createPortal } from 'react-dom'
+import { useState, useMemo } from 'react'
 import SearchableSelect from './SearchableSelect'
 import API_URL from '../api.js';
 
@@ -20,36 +19,6 @@ function parseProjectVersionKey(key) {
     projectId: key.slice(0, separatorIndex),
     versionLabel: key.slice(separatorIndex + 1)
   }
-}
-
-const DROPDOWN_ESTIMATED_HEIGHT = 246
-
-function getVisibleBounds(element) {
-  let visibleTop = 0
-  let visibleBottom = window.innerHeight
-
-  let el = element?.parentElement
-  while (el) {
-    const { overflowY, overflowX } = window.getComputedStyle(el)
-    const isScrollContainer =
-      ['auto', 'scroll', 'hidden'].includes(overflowY) ||
-      ['auto', 'scroll', 'hidden'].includes(overflowX)
-
-    if (isScrollContainer) {
-      const rect = el.getBoundingClientRect()
-      visibleTop = Math.max(visibleTop, rect.top)
-      visibleBottom = Math.min(visibleBottom, rect.bottom)
-    }
-    el = el.parentElement
-  }
-
-  return { visibleTop, visibleBottom }
-}
-
-function shouldOpenUpward(triggerRect, container) {
-  const { visibleBottom } = getVisibleBounds(container)
-  const spaceBelow = visibleBottom - triggerRect.bottom
-  return spaceBelow < DROPDOWN_ESTIMATED_HEIGHT
 }
 
 function getInitialSelections(projectConfig, projectsList) {
@@ -88,68 +57,7 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const [searchText, setSearchText] = useState('')
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const [openUpward, setOpenUpward] = useState(false)
-  const [position, setPosition] = useState({ top: 0, left: 0, width: 0, bottom: 0 })
 
-  const containerRef = useRef(null)
-  const dropdownRef = useRef(null)
-  const searchRef = useRef(null)
-
-  const closeDropdown = () => {
-    setDropdownOpen(false)
-    setSearchText('')
-  }
-
-  const openDropdown = () => {
-    if (containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect()
-      const upward = shouldOpenUpward(rect, containerRef.current)
-      setOpenUpward(upward)
-      setPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-        bottom: window.innerHeight - rect.top + 4
-      })
-    } else {
-      setOpenUpward(false)
-    }
-    setDropdownOpen(true)
-  }
-
-  useEffect(() => {
-    if (!dropdownOpen) return
-
-    const handleClickOutside = (e) => {
-      if (
-        !containerRef.current?.contains(e.target) &&
-        !dropdownRef.current?.contains(e.target)
-      ) {
-        closeDropdown()
-      }
-    }
-
-    const handleScroll = (e) => {
-      if (dropdownRef.current?.contains(e.target)) return
-      closeDropdown()
-    }
-
-    document.addEventListener('mousedown', handleClickOutside)
-    window.addEventListener('scroll', handleScroll, true)
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-      window.removeEventListener('scroll', handleScroll, true)
-    }
-  }, [dropdownOpen])
-
-  useEffect(() => {
-    if (dropdownOpen && searchRef.current) {
-      searchRef.current.focus()
-    }
-  }, [dropdownOpen])
 
   const { projectId: selectedProjectId, versionLabel: selectedVersionLabel } = useMemo(
     () => parseProjectVersionKey(selectedProjectVersionKey),
@@ -185,12 +93,7 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
 
   const allProjectVersionPairs = projectVersionOptions
 
-  const filteredOptions = allProjectVersionPairs.filter(option =>
-    option.label.toLowerCase().includes(searchText.toLowerCase())
-  )
 
-  const selectedOption = allProjectVersionPairs.find((o) => o.value === selectedProjectVersionKey)
-  const displayLabel = selectedOption?.label || (selectedProjectVersionKey ? selectedProjectVersionKey : "Select a project and version...")
 
   const itemTypeOptions = useMemo(
     () =>
@@ -302,73 +205,15 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
-          <div ref={containerRef} className="relative">
-            <button
-              type="button"
-              onClick={() => !(loading || projectsList.length === 0) && (dropdownOpen ? closeDropdown() : openDropdown())}
-              disabled={loading || projectsList.length === 0}
-              className={`w-full px-3 py-2 border rounded-lg text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#7E3F98] transition-colors flex items-center justify-between gap-2 ${
-                loading || projectsList.length === 0 ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''
-              } border-gray-300`}
-            >
-              <span className="truncate">{displayLabel}</span>
-              <svg
-                className={`w-4 h-4 shrink-0 text-gray-500 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-            {dropdownOpen && createPortal(
-              <div
-                ref={dropdownRef}
-                style={openUpward
-                  ? { position: 'fixed', left: position.left, width: position.width, bottom: position.bottom }
-                  : { position: 'fixed', left: position.left, width: position.width, top: position.top }
-                }
-                className="z-50 bg-white border border-gray-300 rounded-lg shadow-lg overscroll-contain"
-                onWheel={(e) => e.stopPropagation()}
-              >
-                <div className="p-2 border-b border-gray-200">
-                  <input
-                    ref={searchRef}
-                    type="text"
-                    value={searchText}
-                    onChange={(e) => setSearchText(e.target.value)}
-                    placeholder="Search projects..."
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7E3F98]"
-                  />
-                </div>
-                <ul className="max-h-48 overflow-y-auto overscroll-contain py-1">
-                  {filteredOptions.length === 0 ? (
-                    <li className="px-3 py-2 text-sm text-gray-500">No matching fields</li>
-                  ) : (
-                    filteredOptions.map((option) => (
-                      <li key={option.value}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleProjectVersionChange(option.value)
-                            closeDropdown()
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                            option.value === selectedProjectVersionKey
-                              ? 'bg-purple-50 text-[#7E3F98]'
-                              : 'text-gray-700 hover:bg-gray-100'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              </div>,
-              document.body
-            )}
-          </div>
+          <SearchableSelect
+            value={selectedProjectVersionKey}
+            onChange={handleProjectVersionChange}
+            options={projectVersionOptions}
+            disabled={loading || projectsList.length === 0}
+            placeholder="Select a project and version..."
+            searchPlaceholder="Search projects..."
+            className="border-gray-300"
+          />
         </div>
 
         <div>

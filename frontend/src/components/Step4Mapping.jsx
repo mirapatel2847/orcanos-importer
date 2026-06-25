@@ -93,9 +93,79 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [focusedInput, setFocusedInput] = useState({ index: null, offset: null });
   const [pendingFocus, setPendingFocus] = useState(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   const containerRef = useRef(null);
   const inputRefs = useRef({});
+  const searchRef = useRef(null);
+  const triggerRef = useRef(null);
+  const activeOptionRef = useRef(null);
+
+  // Focus search input when dropdownOpen is true
+  useEffect(() => {
+    if (dropdownOpen && searchRef.current) {
+      searchRef.current.focus();
+    }
+  }, [dropdownOpen]);
+
+  // Reset highlightedIndex when search term changes
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [searchTerm]);
+
+  // Reset search and highlightedIndex when dropdownOpen becomes true
+  useEffect(() => {
+    if (dropdownOpen) {
+      setSearchTerm('');
+      setHighlightedIndex(0);
+    }
+  }, [dropdownOpen]);
+
+  // Focus return to trigger on close
+  const wasOpen = useRef(dropdownOpen);
+  useEffect(() => {
+    if (wasOpen.current && !dropdownOpen) {
+      triggerRef.current?.focus();
+    }
+    wasOpen.current = dropdownOpen;
+  }, [dropdownOpen]);
+
+  // Scroll active option into view
+  useEffect(() => {
+    if (dropdownOpen && activeOptionRef.current) {
+      activeOptionRef.current.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightedIndex, dropdownOpen]);
+
+  const handleTriggerKeyDown = (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setDropdownOpen(true);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (filteredColumns.length > 0) {
+        setHighlightedIndex((prev) => (prev + 1) % filteredColumns.length);
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (filteredColumns.length > 0) {
+        setHighlightedIndex((prev) => (prev - 1 + filteredColumns.length) % filteredColumns.length);
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredColumns.length > 0 && highlightedIndex >= 0 && highlightedIndex < filteredColumns.length) {
+        handleSelectColumn(filteredColumns[highlightedIndex]);
+        setDropdownOpen(false);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setDropdownOpen(false);
+    }
+  };
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -289,8 +359,12 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
 
         <div className="flex items-center gap-2 flex-shrink-0 pl-1 border-l border-gray-200 ml-2">
           <button
+            ref={triggerRef}
             type="button"
             onClick={() => setDropdownOpen(!dropdownOpen)}
+            onKeyDown={handleTriggerKeyDown}
+            aria-haspopup="listbox"
+            aria-expanded={dropdownOpen}
             className="text-gray-400 hover:text-[#7E3F98] p-1 transition focus:outline-none"
             title="Insert Excel Column"
           >
@@ -311,20 +385,43 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
         <div className="absolute right-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-2 flex flex-col max-h-60">
           <div className="relative mb-2 flex-shrink-0">
             <input
+              ref={searchRef}
               type="text"
               placeholder="Search columns..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              role="combobox"
+              aria-expanded={dropdownOpen}
+              aria-autocomplete="list"
+              aria-controls="columns-listbox"
+              aria-activedescendant={dropdownOpen && filteredColumns.length > 0 ? `col-option-${highlightedIndex}` : undefined}
               className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#7E3F98] focus:border-transparent"
             />
           </div>
-          <div className="overflow-y-auto flex-1 space-y-0.5 max-h-40 pr-1">
+          <div
+            id="columns-listbox"
+            role="listbox"
+            className="overflow-y-auto flex-1 space-y-0.5 max-h-40 pr-1"
+          >
             {filteredColumns.map((col, cIdx) => (
               <button
                 key={cIdx}
+                id={`col-option-${cIdx}`}
+                role="option"
+                aria-selected={false}
+                ref={cIdx === highlightedIndex ? activeOptionRef : null}
                 type="button"
-                onClick={() => handleSelectColumn(col)}
-                className="w-full text-left px-2 py-1.5 text-xs text-gray-700 hover:bg-purple-50 hover:text-purple-700 rounded transition font-medium truncate"
+                onClick={() => {
+                  handleSelectColumn(col);
+                  setDropdownOpen(false);
+                }}
+                tabIndex={-1}
+                className={`w-full text-left px-2 py-1.5 text-xs rounded transition font-medium truncate ${
+                  cIdx === highlightedIndex
+                    ? 'bg-purple-100 text-[#7E3F98]'
+                    : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
+                }`}
               >
                 {col}
               </button>
