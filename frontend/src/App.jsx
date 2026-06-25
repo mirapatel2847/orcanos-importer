@@ -248,7 +248,18 @@ export default function App() {
             <Step3Upload fileData={state.fileData} projectConfig={state.projectConfig} onComplete={handleStep3Complete} onBack={handleBackStep3} />
           )}
           {state.currentStep === 4 && (
-            <Step4Mapping fileData={state.fileData} existingMapping={state.mapping} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onComplete={handleStep4Complete} onBack={handleBackStep4} />
+            <Step4Mapping
+              fileData={state.fileData}
+              existingMapping={state.mapping}
+              existingStepsMapping={state.stepsMapping}
+              existingTestCaseLinkColumn={state.testCaseLinkColumn}
+              existingStepsLinkColumn={state.stepsLinkColumn}
+              projectConfig={state.projectConfig}
+              orcanosFields={state.orcanosFields}
+              mandatoryFields={state.mandatoryFields}
+              onComplete={handleStep4Complete}
+              onBack={handleBackStep4}
+            />
           )}
           {state.currentStep === 5 && (
             <Step5Import fileData={state.fileData} mapping={state.mapping} stepsMapping={state.stepsMapping} testCaseLinkColumn={state.testCaseLinkColumn} stepsLinkColumn={state.stepsLinkColumn} credentials={state.credentials} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onStartOver={handleStep5StartOver} onBack={handleBackStep5} setImportInProgress={setImportInProgress} />          )}

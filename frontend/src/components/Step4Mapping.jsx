@@ -60,7 +60,7 @@ const parseAndNormalizeMapping = (rawMap) => {
           } else {
             alternating.push({ type: 'text', value: '' });
             alternating.push(part);
-            expectText = false;
+            expectText = true;
           }
         } else {
           if (part.type === 'column') {
@@ -365,7 +365,18 @@ function buildEmptyStepsMapping(stepsHeaders) {
   return m
 }
 
-export default function Step4Mapping({ fileData, existingMapping, projectConfig, orcanosFields = [], mandatoryFields = [], onComplete, onBack }) {
+export default function Step4Mapping({
+  fileData,
+  existingMapping,
+  existingStepsMapping,
+  existingTestCaseLinkColumn,
+  existingStepsLinkColumn,
+  projectConfig,
+  orcanosFields = [],
+  mandatoryFields = [],
+  onComplete,
+  onBack
+}) {
   const [mapping, setMapping] = useState({})
   const [stepsMapping, setStepsMapping] = useState({})
   const [testCaseLinkColumn, setTestCaseLinkColumn] = useState('')
@@ -429,20 +440,34 @@ export default function Step4Mapping({ fileData, existingMapping, projectConfig,
       setMapping(parseAndNormalizeMapping(autoMapping))
     }
 
-    // Auto-init steps mapping
+    // Auto-init/load steps mapping
     if (hasSteps) {
-      setStepsMapping(buildEmptyStepsMapping(fileData.stepsHeaders || []))
-      // Try to auto-detect link columns: look for common names like "test case number", "tc number", "tc no", etc.
-      const tcHeaders   = fileData.headers       || []
-      const stepHeaders = fileData.stepsHeaders  || []
+      if (existingStepsMapping) {
+        setStepsMapping(parseAndNormalizeMapping(existingStepsMapping))
+      } else {
+        setStepsMapping(buildEmptyStepsMapping(fileData.stepsHeaders || []))
+      }
 
-      const linkKeywords = ['testcasenumber', 'tcnumber', 'tcno', 'testcaseid', 'tcid', 'caseno', 'casenumber']
-      const findLink = (arr) => arr.find(h => linkKeywords.includes((h || '').toLowerCase().replace(/[\s_-]+/g, ''))) || ''
+      if (existingTestCaseLinkColumn) {
+        setTestCaseLinkColumn(existingTestCaseLinkColumn)
+      } else {
+        // Try to auto-detect link columns: look for common names like "test case number", "tc number", "tc no", etc.
+        const tcHeaders   = fileData.headers       || []
+        const linkKeywords = ['testcasenumber', 'tcnumber', 'tcno', 'testcaseid', 'tcid', 'caseno', 'casenumber']
+        const findLink = (arr) => arr.find(h => linkKeywords.includes((h || '').toLowerCase().replace(/[\s_-]+/g, ''))) || ''
+        setTestCaseLinkColumn(findLink(tcHeaders) || (tcHeaders[0] || ''))
+      }
 
-      setTestCaseLinkColumn(findLink(tcHeaders)   || (tcHeaders[0]   || ''))
-      setStepsLinkColumn(   findLink(stepHeaders) || (stepHeaders[0] || ''))
+      if (existingStepsLinkColumn) {
+        setStepsLinkColumn(existingStepsLinkColumn)
+      } else {
+        const stepHeaders = fileData.stepsHeaders  || []
+        const linkKeywords = ['testcasenumber', 'tcnumber', 'tcno', 'testcaseid', 'tcid', 'caseno', 'casenumber']
+        const findLink = (arr) => arr.find(h => linkKeywords.includes((h || '').toLowerCase().replace(/[\s_-]+/g, ''))) || ''
+        setStepsLinkColumn(findLink(stepHeaders) || (stepHeaders[0] || ''))
+      }
     }
-  }, [fileData, existingMapping, orcanosFields])
+  }, [fileData, existingMapping, existingStepsMapping, existingTestCaseLinkColumn, existingStepsLinkColumn, orcanosFields])
 
   const handleMappingChange = (orcanosField, parts) => {
     setMapping(prev => ({
