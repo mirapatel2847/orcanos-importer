@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import * as XLSX from 'xlsx'
 import API_URL from '../api.js';
 
-export default function Step5Import({ fileData, mapping, stepsMapping, testCaseLinkColumn, stepsLinkColumn, credentials, projectConfig, orcanosFields = [], mandatoryFields = [], onStartOver, onBack, setImportInProgress }) {
+export default function Step5Import({ fileData, mapping, stepsMapping, testCaseLinkColumn, stepsLinkColumn, credentials, projectConfig, orcanosFields = [], mandatoryFields = [], onStartOver, onBack, setImportInProgress, onResetToStep2 }) {
   // Validation state
   const [validating, setValidating] = useState(true)
   const [validation, setValidation] = useState(null)
@@ -15,6 +15,15 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
   const [results, setResults] = useState(null)
   const [error, setError] = useState('')
   const [showBackConfirm, setShowBackConfirm] = useState(false)
+
+  const handleBadgeClick = () => {
+    if (importing) return
+    onResetToStep2()
+  }
+
+  const badgeClass = importing
+    ? "font-semibold text-purple-700 select-none"
+    : "font-semibold text-purple-700 hover:underline cursor-pointer select-none"
 
   // Bubble up importing state to parent
   useEffect(() => {
@@ -239,10 +248,10 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
           {projectConfig && (
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
               <span>Project:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+              <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
               <span>Item Type:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
+              <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
             </div>
           )}
         </div>
@@ -264,10 +273,10 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
           {projectConfig && (
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
               <span>Project:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+              <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
               <span>Item Type:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
+              <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
             </div>
           )}
         </div>
@@ -304,10 +313,10 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
           {projectConfig && (
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
               <span>Project:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+              <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
               <span>Item Type:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
+              <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
             </div>
           )}
         </div>
@@ -476,10 +485,10 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
           {projectConfig && (
             <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
               <span>Project:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+              <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
               <span>Item Type:</span>
-              <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
+              <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
             </div>
           )}
         </div>

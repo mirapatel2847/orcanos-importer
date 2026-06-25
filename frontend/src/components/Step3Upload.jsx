@@ -7,7 +7,7 @@ function isTestCase(projectConfig) {
   return label.includes('test case') || code === 'tc'
 }
 
-export default function Step3Upload({ fileData: initialFileData, projectConfig, onComplete, onBack }) {
+export default function Step3Upload({ fileData: initialFileData, projectConfig, onComplete, onBack, onResetToStep2 }) {
   const [fileData, setFileData]     = useState(initialFileData)
   const [fileName, setFileName]     = useState(initialFileData ? 'Previously uploaded file' : '')
   const [error, setError]           = useState('')
@@ -175,10 +175,10 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
         {projectConfig && (
           <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
             <span>Project:</span>
-            <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+            <span className="font-semibold text-purple-700 hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
             <span className="text-purple-300">|</span>
             <span>Item Type:</span>
-            <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || ''}</span>
+            <span className="font-semibold text-purple-700 hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.object_type_label || projectConfig.item_type || ''}</span>
           </div>
         )}
       </div>

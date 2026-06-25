@@ -54,6 +54,12 @@ export default function App() {
   
   const [fadeIn, setFadeIn] = useState(true)
   const [importInProgress, setImportInProgress] = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
+  const handleResetToStep2 = () => {
+    if (importInProgress) return
+    setShowResetConfirm(true)
+  }
 
   const handleStepClick = (stepNumber) => {
     if (importInProgress || stepNumber >= state.currentStep) return;
@@ -245,7 +251,7 @@ export default function App() {
             <Step2Project credentials={state.credentials} projectConfig={state.projectConfig}   projectsList={state.projectsList} onComplete={handleStep2Complete} onBack={handleBackStep2} />
           )}
           {state.currentStep === 3 && (
-            <Step3Upload fileData={state.fileData} projectConfig={state.projectConfig} onComplete={handleStep3Complete} onBack={handleBackStep3} />
+            <Step3Upload fileData={state.fileData} projectConfig={state.projectConfig} onComplete={handleStep3Complete} onBack={handleBackStep3} onResetToStep2={handleResetToStep2} />
           )}
           {state.currentStep === 4 && (
             <Step4Mapping
@@ -259,12 +265,52 @@ export default function App() {
               mandatoryFields={state.mandatoryFields}
               onComplete={handleStep4Complete}
               onBack={handleBackStep4}
+              onResetToStep2={handleResetToStep2}
             />
           )}
           {state.currentStep === 5 && (
-            <Step5Import fileData={state.fileData} mapping={state.mapping} stepsMapping={state.stepsMapping} testCaseLinkColumn={state.testCaseLinkColumn} stepsLinkColumn={state.stepsLinkColumn} credentials={state.credentials} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onStartOver={handleStep5StartOver} onBack={handleBackStep5} setImportInProgress={setImportInProgress} />          )}
+            <Step5Import fileData={state.fileData} mapping={state.mapping} stepsMapping={state.stepsMapping} testCaseLinkColumn={state.testCaseLinkColumn} stepsLinkColumn={state.stepsLinkColumn} credentials={state.credentials} projectConfig={state.projectConfig} orcanosFields={state.orcanosFields} mandatoryFields={state.mandatoryFields} onStartOver={handleStep5StartOver} onBack={handleBackStep5} setImportInProgress={setImportInProgress} onResetToStep2={handleResetToStep2} />          )}
         </div>
       </div>
+
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Change Project & Item Type?</h3>
+            <p className="text-gray-600 mb-6">
+              This will reset your uploaded file, field mappings, and any import progress. You'll be taken back to Step 2 to reselect.
+            </p>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetConfirm(false)
+                  setState(prev => ({
+                    ...prev,
+                    fileData: null,
+                    mapping: null,
+                    stepsMapping: null,
+                    testCaseLinkColumn: null,
+                    stepsLinkColumn: null,
+                    results: null,
+                    currentStep: 2
+                  }))
+                }}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+              >
+                Yes, go back
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

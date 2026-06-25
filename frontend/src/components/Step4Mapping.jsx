@@ -472,7 +472,8 @@ export default function Step4Mapping({
   orcanosFields = [],
   mandatoryFields = [],
   onComplete,
-  onBack
+  onBack,
+  onResetToStep2
 }) {
   const [mapping, setMapping] = useState({})
   const [stepsMapping, setStepsMapping] = useState({})
@@ -681,10 +682,10 @@ export default function Step4Mapping({
         {projectConfig && (
           <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
             <span>Project:</span>
-            <span className="font-semibold text-purple-700">{projectConfig.project_name || projectConfig.projectName || ''}</span>
+            <span className="font-semibold text-purple-700 hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
             <span className="text-purple-300">|</span>
             <span>Item Type:</span>
-            <span className="font-semibold text-purple-700">{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
+            <span className="font-semibold text-purple-700 hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
           </div>
         )}
       </div>
