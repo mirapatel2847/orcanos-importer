@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import API_URL from '../api.js'
 
-function isTestCase(projectConfig) {
+function isTwoSheetType(projectConfig) {
   const label = (projectConfig?.object_type_label || '').toLowerCase()
-  const code  = (projectConfig?.item_type || '').toLowerCase()
-  return label.includes('test case') || code === 'tc'
+  const code  = (projectConfig?.item_type || '').toUpperCase()
+  return label.includes('test case') || code === 'TC' || code === 'T_CASE' || code === 'DEFECT'
 }
+// Backwards-compatible alias used throughout this file
+const isTestCase = isTwoSheetType
 
 export default function Step3Upload({ fileData: initialFileData, projectConfig, onComplete, onBack, onResetToStep2 }) {
   const [fileData, setFileData]     = useState(initialFileData)

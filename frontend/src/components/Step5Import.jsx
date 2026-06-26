@@ -166,7 +166,8 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
     if (!results || !results.results) return;
 
     const hasStepsCols = results.results.some(r => r.stepsTotal != null)
-    const headers = ['Row', 'Object Name', 'Object Type', 'Status', 'Object ID', 'Error Message',
+    const objectNameHeader = itemTypeCode === 'DEFECT' ? 'Synopsis' : 'Object Name'
+    const headers = ['Row', objectNameHeader, 'Object Type', 'Status', 'Object ID', 'Error Message',
       ...(hasStepsCols ? ['Steps Added', 'Steps Failed'] : [])
     ];
 
@@ -406,7 +407,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                     Row
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                    Object Name
+                    {itemTypeCode === 'DEFECT' ? 'Synopsis' : 'Object Name'}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                     Object Type
@@ -502,7 +503,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                   Row
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  Object Name
+                  {itemTypeCode === 'DEFECT' ? 'Synopsis' : 'Object Name'}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
                   Object Type

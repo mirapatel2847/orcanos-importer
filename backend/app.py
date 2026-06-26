@@ -420,7 +420,11 @@ def validate_import():
             if not api_body.get('Parent_ID'):
                 api_body['Parent_ID'] = str(api_body['Project_ID'])
 
-            if is_update and api_body.get('Object_Type') == 'T_CASE':
+            item_type_code = project_config.get('item_type', '').upper()
+            # QW_Add/Update_Defect requires the raw project name (without version suffix) for project resolution
+            if item_type_code == 'DEFECT':
+                api_body['Project_Name'] = project_config.get('raw_project_name') or project_config.get('project_name', '')
+            if is_update and item_type_code in ('T_CASE', 'DEFECT'):
                 api_body.pop('Release_Version', None)
 
             if is_update:
@@ -442,9 +446,11 @@ def validate_import():
             else:
                 invalid_count += 1
 
+            # For DEFECT the display name field is Synopsis; fall back to Object_Name
+            display_name = api_body.get('Synopsis', '') if item_type_code == 'DEFECT' else api_body.get('Object_Name', '')
             rows_result.append({
                 "row": row_idx,
-                "objectName": serialize_value(api_body.get('Object_Name', '')) or '',
+                "objectName": serialize_value(display_name) or '',
                 "objectType": serialize_value(api_body.get('Object_Type', '')) or '',
                 "valid": is_valid,
                 "reasons": reasons
@@ -596,16 +602,22 @@ def import_data():
                     # Parent_ID defaulting
                     if not api_body.get('Parent_ID'):
                         api_body['Parent_ID'] = str(api_body['Project_ID'])
-                    
-                    if is_update and api_body.get('Object_Type') == 'T_CASE':
+
+                    item_type_code = project_config.get('item_type', '').upper()
+                    # QW_Add/Update_Defect requires the raw project name (without version suffix) for project resolution
+                    if item_type_code == 'DEFECT':
+                        api_body['Project_Name'] = project_config.get('raw_project_name') or project_config.get('project_name', '')
+                    if is_update and item_type_code in ('T_CASE', 'DEFECT'):
                         api_body.pop('Release_Version', None)
                     
                     # Validate row if Add
                     validation_errors = [] if is_update else validate_row(api_body, mandatory_fields)
                     
+                    # For DEFECT the display name field is Synopsis; fall back to Object_Name
+                    display_name = api_body.get('Synopsis', '') if item_type_code == 'DEFECT' else api_body.get('Object_Name', '')
                     result = {
                         'row': row_idx,
-                        'objectName': serialize_value(api_body.get('Object_Name', '')),
+                        'objectName': serialize_value(display_name),
                         'objectType': serialize_value(api_body.get('Object_Type', '')),
                         'status': 'pending',
                         'objectId': 0,
@@ -619,7 +631,9 @@ def import_data():
                     else:
                         # Call Orcanos API
                         try:
-                            if is_update:
+                            if item_type_code == 'DEFECT':
+                                url = f"https://{domain}/api/v2/Json/QW_Update_Defect" if is_update else f"https://{domain}/api/v2/Json/QW_Add_Defect"
+                            elif is_update:
                                 url = f"https://{domain}/api/v2/Json/QW_Update_Object"
                             else:
                                 url = f"https://{domain}/api/v2/Json/QW_Add_Object"
@@ -665,7 +679,7 @@ def import_data():
                                             for step_row in matching_steps:
                                                 step_body = {
                                                     'ItemId':        int(object_id),
-                                                    'ObjectType':    'OBJECT',
+                                                    'ObjectType':    'DEFECT' if item_type_code == 'DEFECT' else 'OBJECT',
                                                     'StepNumber':    resolve_parts(steps_mapping.get('StepNumber'),    step_row).strip(),
                                                     'Description':   resolve_parts(steps_mapping.get('Description'),   step_row).strip(),
                                                     'ExpectedValue': resolve_parts(steps_mapping.get('ExpectedValue'), step_row).strip(),
