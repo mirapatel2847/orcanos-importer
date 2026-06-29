@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import logo from './logo.png'
 import StepIndicator from './components/StepIndicator'
 import Step1Auth from './components/Step1Auth'
@@ -56,6 +56,16 @@ export default function App() {
   const [importInProgress, setImportInProgress] = useState(false)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
 
+  // Snapshot of project+itemType taken when the user enters Step 2 from a later step.
+  // Used to decide whether downstream state should be cleared on Step 2 confirm.
+  const step2EntrySnapshot = useRef(null)
+
+  const captureStep2Snapshot = () => {
+    step2EntrySnapshot.current = state.projectConfig
+      ? { project_id: state.projectConfig.project_id, item_type: state.projectConfig.item_type }
+      : null
+  }
+
   const handleResetToStep2 = () => {
     if (importInProgress) return
     setShowResetConfirm(true)
@@ -63,7 +73,11 @@ export default function App() {
 
   const handleStepClick = (stepNumber) => {
     if (importInProgress || stepNumber >= state.currentStep) return;
-    
+
+    // When jumping back to Step 2, snapshot the current project/item-type so
+    // handleStep2Complete can decide whether downstream state needs to be cleared.
+    if (stepNumber === 2) captureStep2Snapshot()
+
     setFadeIn(false)
     setTimeout(() => {
       setState(prev => ({
@@ -99,6 +113,15 @@ export default function App() {
   }
 
   const handleStep2Complete = (projectConfig, orcanosFields, mandatoryFields) => {
+    // Compare new selection against the snapshot taken when entering Step 2.
+    // If project or item type changed, wipe all downstream state.
+    const snap = step2EntrySnapshot.current
+    const selectionChanged = !snap ||
+      String(projectConfig.project_id) !== String(snap.project_id) ||
+      projectConfig.item_type !== snap.item_type
+
+    step2EntrySnapshot.current = null  // consume snapshot
+
     setFadeIn(false)
     setTimeout(() => {
       setState(prev => ({
@@ -106,6 +129,15 @@ export default function App() {
         projectConfig,
         orcanosFields,
         mandatoryFields,
+        // Only clear downstream state when the project/item-type actually changed
+        ...(selectionChanged ? {
+          fileData: null,
+          mapping: null,
+          stepsMapping: null,
+          testCaseLinkColumn: null,
+          stepsLinkColumn: null,
+          results: null
+        } : {}),
         currentStep: 3
       }))
       setFadeIn(true)
@@ -113,6 +145,8 @@ export default function App() {
   }
 
   const handleBackStep3 = () => {
+    // Snapshot before going back so handleStep2Complete can compare on confirm
+    captureStep2Snapshot()
     setFadeIn(false)
     setTimeout(() => {
       setState(prev => ({
