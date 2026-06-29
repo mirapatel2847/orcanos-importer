@@ -230,13 +230,16 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
           />
           {selectedItemTypeCode && (() => {
             const selectedLabel = itemTypeOptions.find(o => o.value === selectedItemTypeCode)?.label || ''
-            if (selectedLabel.toLowerCase().includes('test case')) {
+            const isTestCase = selectedLabel.toLowerCase().includes('test case')
+            const isDefect  = selectedItemTypeCode.toUpperCase() === 'DEFECT' || selectedLabel.toLowerCase().includes('defect')
+            if (isTestCase || isDefect) {
+              const noun = isTestCase ? 'test case' : 'defect'
               return (
                 <div className="mt-2 flex items-start gap-2 bg-blue-50 border border-blue-200 text-blue-700 text-xs rounded-lg px-3 py-2">
                   <svg className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
                   </svg>
-                  <span>Test Case imports support a two-sheet Excel file — one sheet for test case fields and one for steps.</span>
+                  <span>{selectedLabel} imports support a two-sheet Excel file — one sheet for {noun} fields and one for steps.</span>
                 </div>
               )
             }
