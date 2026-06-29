@@ -15,6 +15,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
   const [results, setResults] = useState(null)
   const [error, setError] = useState('')
   const [showBackConfirm, setShowBackConfirm] = useState(false)
+  const [showStartOverConfirm, setShowStartOverConfirm] = useState(false)
 
   const handleBadgeClick = () => {
     if (importing) return
@@ -634,8 +635,13 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
             Export Results
           </button>
           <button
-            onClick={onStartOver}
-            className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-1 sm:order-3"
+            onClick={() => {
+              if (!importing) {
+                setShowStartOverConfirm(true)
+              }
+            }}
+            disabled={importing}
+            className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-1 sm:order-3"
           >
             Start Over
           </button>
@@ -661,6 +667,39 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition"
                 >
                   Go Back
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Start Over Confirmation Modal */}
+        {showStartOverConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-4">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Start Over?</h3>
+              <p className="text-gray-600 mb-6 text-sm">
+                This will clear all current data and return you to Step 1.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={() => setShowStartOverConfirm(false)}
+                  disabled={importing}
+                  className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowStartOverConfirm(false)
+                    onStartOver()
+                  }}
+                  disabled={importing}
+                  className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+                >
+                  Start Over
                 </button>
               </div>
             </div>
