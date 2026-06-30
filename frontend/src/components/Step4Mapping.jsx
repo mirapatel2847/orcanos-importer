@@ -365,7 +365,7 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
             onKeyDown={handleTriggerKeyDown}
             aria-haspopup="listbox"
             aria-expanded={dropdownOpen}
-            className="text-gray-400 hover:text-[#7E3F98] p-1 transition focus:outline-none"
+            className="text-gray-400 hover:text-[#652AA5] p-1 transition focus:outline-none"
             title="Insert Excel Column"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -396,7 +396,7 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
               aria-autocomplete="list"
               aria-controls="columns-listbox"
               aria-activedescendant={dropdownOpen && filteredColumns.length > 0 ? `col-option-${highlightedIndex}` : undefined}
-              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#7E3F98] focus:border-transparent"
+              className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-[#762FC4] focus:border-transparent"
             />
           </div>
           <div
@@ -419,8 +419,8 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
                 tabIndex={-1}
                 className={`w-full text-left px-2 py-1.5 text-xs rounded transition font-medium truncate ${
                   cIdx === highlightedIndex
-                    ? 'bg-purple-100 text-[#7E3F98]'
-                    : 'text-gray-700 hover:bg-purple-50 hover:text-purple-700'
+                    ? 'bg-purple-100 text-[#652AA5]'
+                    : 'text-gray-700 hover:bg-[#F7F5F9] hover:text-purple-700'
                 }`}
               >
                 {col}
@@ -680,19 +680,19 @@ export default function Step4Mapping({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Map Fields</h2>
         {projectConfig && (
-          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-[#F7F5F9] border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
             <span>Project:</span>
-            <span className="font-semibold text-purple-700 hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
+            <span className="text-[#8740D5]  hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
             <span className="text-purple-300">|</span>
             <span>Item Type:</span>
-            <span className="font-semibold text-purple-700 hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
+            <span className="text-[#8740D5]  hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.object_type_label || projectConfig.item_type || projectConfig.itemType || ''}</span>
           </div>
         )}
       </div>
 
       {/* Load Previous Mapping Button */}
       <div className="mb-6">
-        <label className="bg-[#7E3F98] hover:bg-[#682e82] text-white font-medium py-2 px-4 rounded-lg cursor-pointer inline-block transition text-sm sm:text-base">
+        <label className="bg-[#2F80ED] hover:bg-[#205EB1] text-white font-medium py-2 px-4 rounded-lg cursor-pointer inline-block transition text-sm sm:text-base">
           Load Previous Mapping
           <input
             type="file"
@@ -856,8 +856,8 @@ export default function Step4Mapping({
 
       {/* Mandatory Fields Info */}
       {mandatoryFields.length > 0 && (
-        <div className="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
-          <p className="text-[#7E3F98] font-semibold mb-2">Mandatory Fields:</p>
+        <div className="mb-6 bg-[#F7F5F9] border border-purple-200 rounded-lg p-4">
+          <p className="text-[#652AA5] font-semibold mb-2">Mandatory Fields:</p>
           <p className="text-purple-800 text-sm">
             {mandatoryFields.map(f => f.title || f.name).join(', ')}
           </p>
@@ -868,19 +868,19 @@ export default function Step4Mapping({
       <div className="flex gap-4">
         <button
           onClick={onBack}
-          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+          className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
         >
           Back
         </button>
         <button
           onClick={handleSaveMapping}
-          className="flex-1 border border-[#7E3F98] text-[#7E3F98] hover:bg-purple-50 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+          className="flex-1 border border-[#2F80ED] text-[#2F80ED] hover:bg-blue-50 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
         >
           Save
         </button>
         <button
           onClick={handleSaveAndImport}
-          className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+          className="flex-1 bg-[#2F80ED] hover:bg-[#205EB1] text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
         >
           Save & Import
         </button>

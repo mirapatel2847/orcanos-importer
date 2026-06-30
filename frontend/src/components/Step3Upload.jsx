@@ -175,12 +175,12 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Upload File</h2>
         {projectConfig && (
-          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-[#F7F5F9] border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
             <span>Project:</span>
-            <span className="font-semibold text-purple-700 hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
+            <span className=" text-[#8740D5]  hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
             <span className="text-purple-300">|</span>
             <span>Item Type:</span>
-            <span className="font-semibold text-purple-700 hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.object_type_label || projectConfig.item_type || ''}</span>
+            <span className=" text-[#8740D5] hover:underline cursor-pointer select-none" onClick={onResetToStep2}>{projectConfig.object_type_label || projectConfig.item_type || ''}</span>
           </div>
         )}
       </div>
@@ -194,7 +194,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             onDragOver={handleDrag}
             onDrop={handleDrop}
             className={`border-2 border-dashed rounded-lg p-8 sm:p-12 text-center transition ${
-              dragActive ? 'border-[#7E3F98] bg-purple-50' : 'border-gray-300'
+              dragActive ? 'border-[#652AA5] bg-[#F7F5F9]' : 'border-gray-300'
             }`}
           >
             <svg className="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,7 +202,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             </svg>
             <p className="text-gray-700 font-medium mb-2 text-sm sm:text-base">Drag and drop your Excel file here</p>
             <p className="text-gray-500 text-xs sm:text-sm mb-4">or</p>
-            <label className="bg-[#7E3F98] hover:bg-[#682e82] text-white font-medium py-2 px-4 sm:px-6 rounded-lg cursor-pointer inline-block transition text-sm sm:text-base">
+            <label className="bg-[#2F80ED] hover:bg-[#205EB1] text-white font-medium py-2 px-4 sm:px-6 rounded-lg cursor-pointer inline-block transition text-sm sm:text-base">
               Choose File
               <input
                 type="file"
@@ -223,7 +223,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
 
           {loading && (
             <div className="mt-4 flex items-center justify-center">
-              <svg className="animate-spin h-5 w-5 text-[#7E3F98]" viewBox="0 0 24 24">
+              <svg className="animate-spin h-5 w-5 text-[#652AA5]" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
@@ -246,7 +246,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             </div>
             <button
               onClick={resetUpload}
-              className="ml-auto text-xs text-[#7E3F98] hover:text-[#682e82] font-medium"
+              className="ml-auto text-xs text-[#652AA5] hover:text-[#5a2191] font-medium"
             >
               Change file
             </button>
@@ -260,7 +260,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             <select
               value={mainSheet}
               onChange={e => setMainSheet(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7E3F98] bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#762FC4] bg-white"
             >
               <option value="">— Select a sheet —</option>
               {sheetNames.map(name => (
@@ -277,7 +277,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
             <select
               value={stepsSheet}
               onChange={e => setStepsSheet(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#7E3F98] bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#762FC4] bg-white"
             >
               <option value="None">None</option>
               {sheetNames.filter(n => n !== mainSheet).map(name => (
@@ -295,7 +295,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
           <button
             onClick={handleConfirmSheets}
             disabled={!mainSheet || sheetLoading}
-            className="w-full bg-[#7E3F98] hover:bg-[#682e82] disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2"
+            className="w-full bg-[#2F80ED] hover:bg-[#205EB1] disabled:bg-[#2F80ED]/32 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm flex items-center justify-center gap-2"
           >
             {sheetLoading && (
               <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
@@ -357,7 +357,7 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
 
           <button
             onClick={resetUpload}
-            className="text-[#7E3F98] hover:text-[#682e82] text-xs sm:text-sm font-medium mb-6"
+            className="text-[#652AA5] hover:text-[#6f33ab] text-xs sm:text-sm font-medium mb-6"
           >
             Upload different file
           </button>
@@ -368,14 +368,14 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
       <div className="flex flex-col sm:flex-row gap-4 mt-8">
         <button
           onClick={onBack}
-          className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+          className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
         >
           Back
         </button>
         <button
           onClick={() => onComplete(fileData, fileChanged)}
           disabled={!fileData}
-          className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+          className="flex-1 bg-[#2F80ED] hover:bg-[#205EB1] disabled:bg-[#2F80ED]/32 text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
         >
           Next
         </button>

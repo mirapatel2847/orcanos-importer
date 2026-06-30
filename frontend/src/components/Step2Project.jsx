@@ -258,14 +258,14 @@ export default function Step2Project({ credentials, projectConfig, projectsList 
             type="button"
             onClick={onBack}
             disabled={loading}
-            className="flex-1 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+            className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
           >
             Back
           </button>
           <button
             type="submit"
             disabled={loading || projectsList.length === 0}
-            className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base flex items-center justify-center gap-2"
+            className="flex-1 bg-[#2F80ED] hover:bg-[#205EB1] disabled:bg-[#2F80ED]/32 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base flex items-center justify-center gap-2"
           >
             {loading && (
               <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">

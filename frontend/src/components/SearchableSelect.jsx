@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 
 // Search input + max-h-48 options list (approximate height for flip detection)
-const DROPDOWN_ESTIMATED_HEIGHT = 246
+const DROPDOWN_ESTIMATED_HEIGHT = 280
 
 function getVisibleBounds(element) {
   let visibleTop = 0
@@ -187,10 +187,24 @@ export default function SearchableSelect({
     <div
       ref={dropdownRef}
       style={dropdownStyle}
-      className="z-50 bg-white border border-gray-300 rounded-lg shadow-lg overscroll-contain"
+      className="z-50 bg-white border border-gray-200 rounded-xl shadow-lg overscroll-contain overflow-hidden"
       onWheel={(e) => e.stopPropagation()}
     >
-      <div className="p-2 border-b border-gray-200">
+      {/* Search row: icon + borderless input, bottom divider only */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
+        <svg
+          className="w-4 h-4 text-gray-400 shrink-0"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z"
+          />
+        </svg>
         <input
           ref={searchRef}
           type="text"
@@ -203,42 +217,45 @@ export default function SearchableSelect({
           aria-autocomplete="list"
           aria-controls="options-listbox"
           aria-activedescendant={open && filteredOptions.length > 0 ? `option-${highlightedIndex}` : undefined}
-          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7E3F98]"
+          className="flex-1 text-sm outline-none bg-transparent placeholder-gray-400 text-gray-900"
         />
       </div>
+
       <ul
         id="options-listbox"
         role="listbox"
-        className="max-h-48 overflow-y-auto overscroll-contain py-1"
+        className="max-h-60 overflow-y-auto overscroll-contain py-1"
       >
         {filteredOptions.length === 0 ? (
-          <li className="px-3 py-2 text-sm text-gray-500">No matching fields</li>
+          <li className="px-4 py-3 text-sm text-gray-500">No matching fields</li>
         ) : (
-          filteredOptions.map((option, index) => (
-            <li key={`${option.value}-${index}`}>
-              <button
-                id={`option-${index}`}
-                role="option"
-                aria-selected={option.value === value}
-                ref={index === highlightedIndex ? activeOptionRef : null}
-                type="button"
-                disabled={option.disabled}
-                onClick={() => handleSelect(option)}
-                tabIndex={-1}
-                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
-                  option.disabled
-                    ? 'text-gray-400 cursor-not-allowed'
-                    : index === highlightedIndex
-                      ? 'bg-purple-100 text-[#7E3F98]'
-                      : option.value === value
-                        ? 'bg-purple-50 text-[#7E3F98]'
-                        : 'text-gray-700 hover:bg-gray-100'
-                } ${option.bold ? 'font-semibold' : ''}`}
-              >
-                {option.label}
-              </button>
-            </li>
-          ))
+          filteredOptions.map((option, index) => {
+            const isActive = index === highlightedIndex
+            const isSelected = option.value === value
+            return (
+              <li key={`${option.value}-${index}`}>
+                <button
+                  id={`option-${index}`}
+                  role="option"
+                  aria-selected={isSelected}
+                  ref={isActive ? activeOptionRef : null}
+                  type="button"
+                  disabled={option.disabled}
+                  onClick={() => handleSelect(option)}
+                  tabIndex={-1}
+                  className={`w-full text-left px-4 py-3 text-sm transition-colors border-l-[3px] ${
+                    option.disabled
+                      ? 'text-gray-400 cursor-not-allowed border-l-transparent'
+                      : isActive
+                        ? 'bg-[#F7F5F9] border-l-[#8740D5] text-gray-900 font-medium'
+                        : 'border-l-transparent text-gray-700 hover:bg-gray-50'
+                  } ${option.bold ? 'font-semibold' : ''}`}
+                >
+                  {option.label}
+                </button>
+              </li>
+            )
+          })
         )}
       </ul>
     </div>
@@ -254,8 +271,10 @@ export default function SearchableSelect({
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className={`w-full px-3 py-2 border rounded-lg text-left text-sm focus:outline-none focus:ring-2 focus:ring-[#7E3F98] transition-colors flex items-center justify-between gap-2 ${
-          disabled ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : ''
+        className={`w-full px-3 py-2 border rounded-lg text-left text-sm focus:outline-none focus:border-[#762FC4] transition-colors flex items-center justify-between gap-2 ${
+          disabled
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+            : 'bg-white border-gray-300 hover:border-gray-400'
         } ${className}`}
       >
         <span className="truncate">{displayLabel}</span>

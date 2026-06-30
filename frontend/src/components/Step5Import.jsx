@@ -23,8 +23,8 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
   }
 
   const badgeClass = importing
-    ? "font-semibold text-purple-700 select-none"
-    : "font-semibold text-purple-700 hover:underline cursor-pointer select-none"
+    ? "font-semibold text-[#8740D5] select-none"
+    : "font-semibold text-[#8740D5] hover:underline cursor-pointer select-none"
 
   // Bubble up importing state to parent
   useEffect(() => {
@@ -248,7 +248,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Validating Data</h2>
           {projectConfig && (
-            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-[#F7F5F9] border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
               <span>Project:</span>
               <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
@@ -258,7 +258,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
           )}
         </div>
         <div className="flex flex-col items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#7E3F98] border-t-transparent mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#8740D5] border-t-transparent mb-4"></div>
           <p className="text-gray-600 text-lg">Validating your data before import…</p>
           <p className="text-gray-400 text-sm mt-2">Checking {fileData.totalRows} rows</p>
         </div>
@@ -273,7 +273,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Validation Error</h2>
           {projectConfig && (
-            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-[#F7F5F9] border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
               <span>Project:</span>
               <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
@@ -282,19 +282,19 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
             </div>
           )}
         </div>
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-          <p className="text-red-600">{validationError}</p>
+        <div className="bg-red-50 border border-[#EA4747]/30 rounded-lg p-4 mb-6">
+          <p className="text-[#EA4747]">{validationError}</p>
         </div>
         <div className="flex gap-4">
           <button
             onClick={onBack}
-            className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-2 px-4 rounded-lg transition"
+            className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
           >
             Back
           </button>
           <button
             onClick={runValidation}
-            className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] text-white font-medium py-2 px-4 rounded-lg transition"
+            className="flex-1 bg-[#2F80ED] hover:bg-[#205EB1] text-white font-medium py-2 px-4 rounded-lg transition"
           >
             Retry Validation
           </button>
@@ -313,7 +313,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Import Data</h2>
           {projectConfig && (
-            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-[#F7F5F9] border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
               <span>Project:</span>
               <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
@@ -326,24 +326,24 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
         {/* Validation Summary Cards */}
         {!importing && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+            <div className="bg-[#F7F5F9] border border-purple-200 rounded-lg p-4">
               <p className="text-purple-800 text-sm font-medium">Total Rows</p>
-              <p className="text-2xl font-bold text-[#7E3F98]">{validation.totalRows}</p>
+              <p className="text-2xl font-bold text-[#8740D5]">{validation.totalRows}</p>
             </div>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-green-50 border border-[#00C875]/30 rounded-lg p-4">
               <p className="text-green-800 text-sm font-medium">Valid</p>
-              <p className="text-2xl font-bold text-green-900">{validation.validRows}</p>
+              <p className="text-2xl font-bold text-[#00C875]">{validation.validRows}</p>
             </div>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-red-50 border border-[#EA4747]/30 rounded-lg p-4">
               <p className="text-red-800 text-sm font-medium">Invalid</p>
-              <p className="text-2xl font-bold text-red-900">{validation.invalidRows}</p>
+              <p className="text-2xl font-bold text-[#EA4747]">{validation.invalidRows}</p>
             </div>
           </div>
         )}
 
         {/* Status Messages */}
         {!importing && allValid && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+          <div className="bg-green-50 border border-[#00C875]/30 rounded-lg p-4 mb-6">
             <p className="text-green-800 font-semibold flex items-center gap-2">
               <span className="text-lg">✓</span>
               All rows are valid. Ready to import!
@@ -352,8 +352,8 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
         )}
 
         {!importing && allInvalid && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-800 font-semibold flex items-center gap-2">
+          <div className="bg-red-50 border border-[#EA4747]/30 rounded-lg p-4 mb-6">
+            <p className="text-[#EA4747] font-semibold flex items-center gap-2">
               <span className="text-lg">✗</span>
               No valid rows to import. Please fix your Excel file and try again.
             </p>
@@ -384,7 +384,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
             </div>
             <div className="w-full bg-gray-200 rounded-full h-3">
               <div
-                className="bg-[#7E3F98] h-3 rounded-full transition-all"
+                className="bg-[#8740D5] h-3 rounded-full transition-all"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -393,8 +393,8 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-600 text-sm">{error}</p>
+          <div className="mb-6 bg-red-50 border border-[#EA4747]/30 rounded-lg p-4">
+            <p className="text-[#EA4747] text-sm">{error}</p>
           </div>
         )}
 
@@ -429,24 +429,24 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                     <td className="px-4 py-3 text-sm text-gray-900">{row.objectType}</td>
                     <td className="px-4 py-3 text-sm">
                       {row.valid ? (
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-200 text-green-800">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#00C875]/20 text-[#00C875]">
                           Ready
                         </span>
                       ) : (
-                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-200 text-red-800">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#EA4747]/20 text-[#EA4747]">
                           Will be skipped
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
                       {row.reasons && row.reasons.length > 0 ? (
-                        <ul className="list-disc list-inside text-red-600 text-xs space-y-0.5">
+                        <ul className="list-disc list-inside text-[#EA4747] text-xs space-y-0.5">
                           {row.reasons.map((reason, rIdx) => (
                             <li key={rIdx}>{reason}</li>
                           ))}
                         </ul>
                       ) : (
-                        <span className="text-green-600 text-xs">—</span>
+                        <span className="text-[#00C875] text-xs">—</span>
                       )}
                     </td>
                   </tr>
@@ -461,14 +461,14 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
           <button
             onClick={handleBackClick}
             disabled={importing}
-            className="flex-1 bg-gray-300 hover:bg-gray-400 disabled:bg-gray-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-2 sm:order-1"
+            className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
           >
             Back
           </button>
           {!importing && (
             <button
               onClick={handleStartImport}
-              className="flex-1 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-1 sm:order-2 bg-[#7E3F98] hover:bg-[#682e82] text-white"
+              className="flex-1 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-1 sm:order-2 bg-[#2F80ED] hover:bg-[#205EB1] text-white"
             >
               Start Import ({fileData.totalRows} rows)
             </button>
@@ -485,7 +485,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Import Results</h2>
           {projectConfig && (
-            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-purple-50 border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
+            <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-gray-500 bg-[#F7F5F9] border border-purple-100 rounded-full px-3 py-1 font-medium select-none">
               <span>Project:</span>
               <span className={badgeClass} onClick={handleBadgeClick}>{projectConfig.project_name || projectConfig.projectName || ''}</span>
               <span className="text-purple-300">|</span>
@@ -538,9 +538,9 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                   <td className="px-4 py-3 text-sm text-gray-900">{result.objectType}</td>
                   <td className="px-4 py-3 text-sm">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      result.status === 'added' ? 'bg-green-200 text-green-800' :
-                      result.status === 'updated' ? 'bg-blue-200 text-blue-800' :
-                      result.status === 'failed' ? 'bg-red-200 text-red-800' :
+                      result.status === 'added' ? 'bg-[#00C875]/20 text-[#00C875]' :
+                      result.status === 'updated' ? 'bg-[#2F80ED]/20 text-[#2F80ED]' :
+                      result.status === 'failed' ? 'bg-[#EA4747]/20 text-[#EA4747]' :
                       'bg-gray-200 text-gray-800'
                     }`}>
                       {result.status}
@@ -554,7 +554,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-[#7E3F98] hover:text-[#682e82] font-medium underline underline-offset-2 transition-colors"
+                          className="inline-flex items-center gap-1 text-[#8740D5] hover:text-[#6f33ab] font-medium underline underline-offset-2 transition-colors"
                           title={`Open object ${itemTypeCode}-${result.objectId} in Orcanos`}
                         >
                           {itemTypeCode}-{result.objectId}
@@ -574,11 +574,11 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                     <td className="px-4 py-3 text-sm">
                       {result.stepsTotal != null ? (
                         <span className={`text-xs font-medium ${
-                          result.stepsFailed > 0 ? 'text-red-600' : 'text-green-700'
+                          result.stepsFailed > 0 ? 'text-[#EA4747]' : 'text-[#00C875]'
                         }`}>
                           {result.stepsAdded}/{result.stepsTotal} added
                           {result.stepsFailed > 0 && (
-                            <span className="text-red-500 ml-1">({result.stepsFailed} failed)</span>
+                            <span className="text-[#EA4747] ml-1">({result.stepsFailed} failed)</span>
                           )}
                         </span>
                       ) : (
@@ -597,21 +597,21 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
 
         {/* Summary Bar */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+          <div className="bg-[#F7F5F9] border border-purple-200 rounded-lg p-4">
             <p className="text-purple-800 text-sm font-medium">Total</p>
-            <p className="text-2xl font-bold text-[#7E3F98]">{results.summary.total}</p>
+            <p className="text-2xl font-bold text-[#8740D5]">{results.summary.total}</p>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-50 border border-[#00C875]/30 rounded-lg p-4">
             <p className="text-green-800 text-sm font-medium">Added</p>
-            <p className="text-2xl font-bold text-green-900">{results.summary.added ?? 0}</p>
+            <p className="text-2xl font-bold text-[#00C875]">{results.summary.added ?? 0}</p>
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-blue-50 border border-[#2F80ED]/30 rounded-lg p-4">
             <p className="text-blue-800 text-sm font-medium">Updated</p>
-            <p className="text-2xl font-bold text-blue-900">{results.summary.updated ?? 0}</p>
+            <p className="text-2xl font-bold text-[#2F80ED]">{results.summary.updated ?? 0}</p>
           </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="bg-red-50 border border-[#EA4747]/30 rounded-lg p-4">
             <p className="text-red-800 text-sm font-medium">Failed</p>
-            <p className="text-2xl font-bold text-red-900">{results.summary.failed}</p>
+            <p className="text-2xl font-bold text-[#EA4747]">{results.summary.failed}</p>
           </div>
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <p className="text-gray-800 text-sm font-medium">Skipped</p>
@@ -624,13 +624,13 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
           <button
             onClick={handleBackClick}
             disabled={importing}
-            className="flex-1 bg-gray-300 hover:bg-gray-400 disabled:bg-gray-300 text-gray-900 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-2 sm:order-1"
+            className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
           >
             Back
           </button>
           <button
             onClick={handleExportResults}
-            className="flex-1 border border-[#7E3F98] text-[#7E3F98] hover:bg-purple-50 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-3 sm:order-2"
+            className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
           >
             Export Results
           </button>
@@ -641,7 +641,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
               }
             }}
             disabled={importing}
-            className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-1 sm:order-3"
+            className="flex-1 bg-[#2F80ED] hover:bg-[#205EB1] disabled:bg-[#2F80ED]/32 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base order-1 sm:order-3"
           >
             Start Over
           </button>
@@ -658,13 +658,13 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
               <div className="flex gap-4">
                 <button
                   onClick={() => setShowBackConfirm(false)}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-2 px-4 rounded-lg transition"
+                  className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleConfirmBack}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition"
+                  className="flex-1 bg-[#EA4747] hover:bg-[#d13d3d] text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
                 >
                   Go Back
                 </button>
@@ -686,7 +686,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                   type="button"
                   onClick={() => setShowStartOverConfirm(false)}
                   disabled={importing}
-                  className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+                  className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] disabled:opacity-50 disabled:cursor-not-allowed font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
                 >
                   Cancel
                 </button>
@@ -697,7 +697,7 @@ export default function Step5Import({ fileData, mapping, stepsMapping, testCaseL
                     onStartOver()
                   }}
                   disabled={importing}
-                  className="flex-1 bg-[#7E3F98] hover:bg-[#682e82] disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+                  className="flex-1 bg-[#2F80ED] hover:bg-[#205EB1] disabled:bg-[#2F80ED]/32 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
                 >
                   Start Over
                 </button>

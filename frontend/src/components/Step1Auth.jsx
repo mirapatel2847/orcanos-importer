@@ -125,7 +125,7 @@ export default function Step1Auth({ credentials, onComplete }) {
             setAuthError('')
           }}
           className={`pb-3 px-3 sm:px-4 font-medium border-b-2 transition text-sm sm:text-base ${activeTab === 'basic'
-              ? 'border-[#7E3F98] text-[#7E3F98]'
+              ? 'border-[#652AA5] text-[#652AA5]'
               : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
         >
@@ -138,7 +138,7 @@ export default function Step1Auth({ credentials, onComplete }) {
             setAuthError('')
           }}
           className={`pb-3 px-3 sm:px-4 font-medium border-b-2 transition text-sm sm:text-base ${activeTab === 'apikey'
-              ? 'border-[#7E3F98] text-[#7E3F98]'
+              ? 'border-[#652AA5] text-[#652AA5]'
               : 'border-transparent text-gray-600 hover:text-gray-900'
             }`}
         >
@@ -163,7 +163,7 @@ export default function Step1Auth({ credentials, onComplete }) {
                 if (errors.domain) setErrors(prev => ({ ...prev, domain: '' }))
                 if (authError) setAuthError('')
               }}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7E3F98] text-sm sm:text-base ${errors.domain ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#762FC4] text-sm sm:text-base ${errors.domain ? 'border-red-500' : 'border-gray-300'
                 }`}
             />
             {errors.domain && <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.domain}</p>}
@@ -182,7 +182,7 @@ export default function Step1Auth({ credentials, onComplete }) {
                 if (errors.username) setErrors(prev => ({ ...prev, username: '' }))
                 if (authError) setAuthError('')
               }}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7E3F98] text-sm sm:text-base ${errors.username ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#762FC4] text-sm sm:text-base ${errors.username ? 'border-red-500' : 'border-gray-300'
                 }`}
             />
             {errors.username && <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.username}</p>}
@@ -201,7 +201,7 @@ export default function Step1Auth({ credentials, onComplete }) {
                 if (errors.password) setErrors(prev => ({ ...prev, password: '' }))
                 if (authError) setAuthError('')
               }}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7E3F98] text-sm sm:text-base ${errors.password ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#762FC4] text-sm sm:text-base ${errors.password ? 'border-red-500' : 'border-gray-300'
                 }`}
             />
             {errors.password && <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.password}</p>}
@@ -210,7 +210,7 @@ export default function Step1Auth({ credentials, onComplete }) {
           <button
             onClick={handleBasicAuthConnect}
             disabled={loading}
-            className="w-full bg-[#7E3F98] hover:bg-[#682e82] disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="w-full bg-[#2F80ED] hover:bg-[#205EB1] disabled:bg-[#2F80ED]/32 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {loading && (
               <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -245,7 +245,7 @@ export default function Step1Auth({ credentials, onComplete }) {
                 if (errors.domain) setErrors(prev => ({ ...prev, domain: '' }))
                 if (authError) setAuthError('')
               }}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7E3F98] text-sm sm:text-base ${errors.domain ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#762FC4] text-sm sm:text-base ${errors.domain ? 'border-red-500' : 'border-gray-300'
                 }`}
             />
             {errors.domain && <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.domain}</p>}
@@ -264,7 +264,7 @@ export default function Step1Auth({ credentials, onComplete }) {
                 if (errors.apiKey) setErrors(prev => ({ ...prev, apiKey: '' }))
                 if (authError) setAuthError('')
               }}
-              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#7E3F98] text-sm sm:text-base ${errors.apiKey ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#762FC4] text-sm sm:text-base ${errors.apiKey ? 'border-red-500' : 'border-gray-300'
                 }`}
             />
             {errors.apiKey && <p className="text-red-500 text-xs sm:text-sm mt-1">{errors.apiKey}</p>}
@@ -273,7 +273,7 @@ export default function Step1Auth({ credentials, onComplete }) {
           <button
             onClick={handleApiKeyConnect}
             disabled={loading}
-            className="w-full bg-[#7E3F98] hover:bg-[#682e82] disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 text-sm sm:text-base"
+            className="w-full bg-[#2F80ED] hover:bg-[#205EB1] disabled:bg-[#2F80ED]/32 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center gap-2 text-sm sm:text-base"
           >
             {loading && (
               <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">

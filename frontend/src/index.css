@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+body {
+  font-family: 'Heebo', sans-serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-orca-blue hover:bg-orca-blue-hover text-white font-medium rounded-lg transition py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply bg-white border border-orca-blue text-orca-blue hover:border-orca-blue-hover hover:text-orca-blue-hover font-medium rounded-lg transition py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-danger {
+    @apply bg-orca-error hover:bg-orca-error-hover text-white font-medium rounded-lg transition py-2 px-4;
+  }
+  .input-field {
+    @apply w-full px-3 py-2 border border-orca-muted rounded-lg text-sm focus:outline-none focus:border-orca-focus transition-colors bg-white;
+  }
+}

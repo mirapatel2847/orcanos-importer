@@ -253,17 +253,17 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF9FC]">
+    <div className="min-h-screen bg-orca-bg1">
       {/* Header with Reset Button */}
-      <div className="bg-white border-b border-purple-100 shadow-sm">
-        <div className="max-w-4xl mx-auto py-4 px-4 flex justify-between items-center">
+      <div className="bg-white border-b border-orca-subtle shadow-sm">
+        <div className="max-w-4xl mx-auto py-3 px-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="Orcanos Logo" className="h-9 w-auto" />
-            <span className="text-[#9CA3AF] font-semibold text-xs tracking-widest border-l border-gray-200 pl-3">IMPORTER</span>
+            <img src={logo} alt="Orcanos Logo" className="h-8 w-auto" />
+            <span className="text-[#7A7A7A] font-medium text-b3 tracking-widest border-l border-orca-subtle pl-3 uppercase">Importer</span>
           </div>
           <button
             onClick={handleResetFromHeader}
-            className="bg-gray-100 hover:bg-purple-100 hover:text-[#7E3F98] text-gray-700 font-medium py-2 px-3 sm:px-4 rounded-lg transition text-sm sm:text-base"
+            className="btn-secondary text-b3 px-3 py-1 h-auto"
           >
             Reset
           </button>
@@ -318,7 +318,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setShowResetConfirm(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-900 font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+                className="flex-1 bg-white border border-[#2F80ED] text-[#2F80ED] hover:border-[#205EB1] hover:text-[#205EB1] font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
               >
                 Cancel
               </button>
@@ -337,7 +337,7 @@ export default function App() {
                     currentStep: 2
                   }))
                 }}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
+                className="flex-1 bg-[#EA4747] hover:bg-[#d13d3d] text-white font-medium py-2 px-4 rounded-lg transition text-sm sm:text-base"
               >
                 Yes, go back
               </button>
