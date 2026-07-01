@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import API_URL from '../api.js';
+import SearchableSelect from './SearchableSelect';
 
 // Serializer to split auto-inserted space after column chips into separate parts
 const serializeParts = (partsList) => {
@@ -482,6 +483,16 @@ export default function Step4Mapping({
   const [error, setError] = useState('')
 
   const hasSteps = !!(fileData?.stepsData && fileData.stepsData.length > 0)
+
+  const mainHeaderOptions = useMemo(
+    () => (fileData?.headers || []).map(h => ({ value: h, label: h })),
+    [fileData?.headers]
+  )
+
+  const stepsHeaderOptions = useMemo(
+    () => (fileData?.stepsHeaders || []).map(h => ({ value: h, label: h })),
+    [fileData?.stepsHeaders]
+  )
   
   const mappedFields = (() => {
     let fields = [...orcanosFields];
@@ -769,45 +780,39 @@ export default function Step4Mapping({
       {hasSteps && (
         <div className="mb-8">
           <h3 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs flex items-center justify-center font-bold">2</span>
+            <span className="w-6 h-6 rounded-full bg-[#F7F5F9] text-[#8740D5] text-xs flex items-center justify-center font-bold">2</span>
             Step Fields
           </h3>
 
           {/* Link column selectors */}
-          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[#F7F5F9] border border-gray-200 rounded-lg">
             <div>
-              <label className="block text-xs font-semibold text-blue-800 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
                 Test Case link column <span className="text-red-500">*</span>
-                <span className="font-normal text-blue-600 ml-1">(main sheet)</span>
+                <span className="font-normal text-gray-500 ml-1">(main sheet)</span>
               </label>
-              <select
+              <SearchableSelect
                 value={testCaseLinkColumn}
-                onChange={e => setTestCaseLinkColumn(e.target.value)}
-                className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-              >
-                <option value="">— Select column —</option>
-                {fileData.headers.map(h => (
-                  <option key={h} value={h}>{h}</option>
-                ))}
-              </select>
-              <p className="text-xs text-blue-600 mt-1">The column in the main sheet that contains the test case number / ID</p>
+                onChange={setTestCaseLinkColumn}
+                options={mainHeaderOptions}
+                placeholder="— Select column —"
+                searchPlaceholder="Search columns..."
+              />
+              <p className="text-xs text-gray-500 mt-1">The column in the main sheet that contains the test case number / ID</p>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-blue-800 mb-1">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
                 Steps link column <span className="text-red-500">*</span>
-                <span className="font-normal text-blue-600 ml-1">(steps sheet)</span>
+                <span className="font-normal text-gray-500 ml-1">(steps sheet)</span>
               </label>
-              <select
+              <SearchableSelect
                 value={stepsLinkColumn}
-                onChange={e => setStepsLinkColumn(e.target.value)}
-                className="w-full px-3 py-2 border border-blue-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
-              >
-                <option value="">— Select column —</option>
-                {(fileData.stepsHeaders || []).map(h => (
-                  <option key={h} value={h}>{h}</option>
-                ))}
-              </select>
-              <p className="text-xs text-blue-600 mt-1">The column in the steps sheet that references the test case number / ID</p>
+                onChange={setStepsLinkColumn}
+                options={stepsHeaderOptions}
+                placeholder="— Select column —"
+                searchPlaceholder="Search columns..."
+              />
+              <p className="text-xs text-gray-500 mt-1">The column in the steps sheet that references the test case number / ID</p>
             </div>
           </div>
 

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import API_URL from '../api.js'
+import SearchableSelect from './SearchableSelect'
 
 function isTwoSheetType(projectConfig) {
   const label = (projectConfig?.object_type_label || '').toLowerCase()
@@ -25,6 +26,19 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
   const [sheetLoading, setSheetLoading] = useState(false)
 
   const testCase = isTestCase(projectConfig)
+
+  const mainSheetOptions = useMemo(
+    () => (sheetNames || []).map(n => ({ value: n, label: n })),
+    [sheetNames]
+  )
+
+  const stepsSheetOptions = useMemo(
+    () => [
+      { value: 'None', label: 'None' },
+      ...(sheetNames || []).filter(n => n !== mainSheet).map(n => ({ value: n, label: n }))
+    ],
+    [sheetNames, mainSheet]
+  )
 
   // ─── First upload call ──────────────────────────────────────────────────────
   const handleFileUpload = async (file) => {
@@ -253,37 +267,31 @@ export default function Step3Upload({ fileData: initialFileData, projectConfig, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Main Sheet <span className="text-red-500">*</span>
               <span className="text-gray-400 font-normal ml-1">(test case fields)</span>
             </label>
-            <select
+            <SearchableSelect
               value={mainSheet}
-              onChange={e => setMainSheet(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#762FC4] bg-white"
-            >
-              <option value="">— Select a sheet —</option>
-              {sheetNames.map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+              onChange={setMainSheet}
+              options={mainSheetOptions}
+              placeholder="— Select a sheet —"
+              searchPlaceholder="Search sheets..."
+            />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
               Steps Sheet
               <span className="text-gray-400 font-normal ml-1">(optional)</span>
             </label>
-            <select
+            <SearchableSelect
               value={stepsSheet}
-              onChange={e => setStepsSheet(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#762FC4] bg-white"
-            >
-              <option value="None">None</option>
-              {sheetNames.filter(n => n !== mainSheet).map(name => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+              onChange={setStepsSheet}
+              options={stepsSheetOptions}
+              placeholder="None"
+              searchPlaceholder="Search sheets..."
+            />
           </div>
 
           {error && (

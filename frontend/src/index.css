@@ -19,4 +19,7 @@ body {
   .input-field {
     @apply w-full px-3 py-2 border border-orca-muted rounded-lg text-sm focus:outline-none focus:border-orca-focus transition-colors bg-white;
   }
+  .select-field {
+    @apply w-full h-[30px] pl-3 pr-8 py-0 border border-orca-muted rounded-lg text-sm text-[#1F1F1F] bg-white appearance-none focus:outline-none focus:border-orca-focus transition-colors cursor-pointer;
+  }
 }
