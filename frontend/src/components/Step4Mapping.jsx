@@ -295,7 +295,7 @@ function MappingInputBuilder({ value, onChange, excelColumns, isMandatory }) {
   return (
     <div ref={containerRef} className="relative w-full">
       <div 
-        className={`flex items-center justify-between border rounded-lg py-1.5 px-2.5 bg-white min-h-[36px] transition-all cursor-text focus-within:ring-2 focus-within:ring-purple-500 focus-within:border-transparent ${
+        className={`flex items-center justify-between border rounded-lg py-1.5 px-2.5 bg-white min-h-[36px] transition-all cursor-text focus-within:ring-1 focus-within:ring-[#762FC4] focus-within:border-transparent ${
           showWarning ? 'border-amber-400 bg-amber-50/10' : 'border-gray-300'
         }`}
         onClick={(e) => {
